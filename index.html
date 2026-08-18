@@ -536,6 +536,23 @@
   @media (max-width:520px){
     .reading-card{ flex-basis:66%; }
   }
+
+  /* ---------- 넓은 화면(PC)에서는 모바일 폭으로 가운데 정렬 ----------
+     배경 이미지가 cover 방식이라 화면이 넓어지면 세로로 심하게 잘려서
+     인물이 과하게 확대돼 보이는 문제를 막기 위해, 일정 너비 이상에서는
+     앱을 휴대폰 화면 폭(480px)으로 가운데 고정하고 양옆은 어두운 배경으로 채웁니다. */
+  @media (min-width:640px){
+    body{ background:var(--ink); }
+    #screenHome, #screenResult, #screenTier, #screenCompatResult{
+      max-width:480px; margin-left:auto; margin-right:auto;
+      box-shadow:0 0 90px rgba(0,0,0,.6);
+      min-height:100vh;
+    }
+    .screen-intro, .screen-chat, .video-overlay, .door-transition{
+      left:50%; right:auto; width:480px;
+      transform:translateX(-50%);
+    }
+  }
 </style>
 </head>
 <body>
