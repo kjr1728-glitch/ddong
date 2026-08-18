@@ -326,12 +326,27 @@
 
   .section-title{ font-size:15px; font-weight:700; color:var(--paper); margin:34px 2px 14px; letter-spacing:-.01em; }
 
+  .card-scroll-wrap{ position:relative; }
   .card-scroll{
     display:flex; gap:14px; overflow-x:auto; padding:2px 2px 14px;
     scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch;
     margin:0 -20px; padding-left:20px; padding-right:20px;
   }
   .card-scroll::-webkit-scrollbar{ display:none; }
+  .scroll-arrow{
+    position:absolute; top:44%; transform:translateY(-50%); z-index:5;
+    width:34px; height:34px; border-radius:50%;
+    background:rgba(10,8,6,.55); color:#f7ecd8; border:1px solid rgba(255,255,255,.25);
+    font-size:19px; line-height:1; display:flex; align-items:center; justify-content:center;
+    backdrop-filter:blur(2px);
+  }
+  .scroll-arrow.left{ left:-6px; }
+  .scroll-arrow.right{ right:-6px; }
+  .scroll-arrow:active{ transform:translateY(-50%) scale(.92); }
+  @media (min-width:640px){
+    .scroll-arrow.left{ left:-14px; }
+    .scroll-arrow.right{ right:-14px; }
+  }
   .reading-card{
     flex:0 0 58%; max-width:220px; scroll-snap-align:start;
     border-radius:14px; overflow:hidden; position:relative; aspect-ratio:3/4;
@@ -389,7 +404,7 @@
   }
 
   /* ---------- 문 열림 전환 (인트로 → 채팅) ---------- */
-  .door-transition{ position:fixed; inset:0; z-index:200; pointer-events:none; }
+  .door-transition{ position:fixed; inset:0; z-index:200; pointer-events:none; overflow:hidden; }
   .door-panel{
     position:absolute; top:0; bottom:0; width:52%;
     background:
@@ -563,30 +578,34 @@
   <p class="home-tagline">담장 너머 몰래 훔쳐보듯, 연화가 그대의 여덟 글자를 풀어드립니다.</p>
 
   <div class="section-title">오리지널 사주</div>
-  <div class="card-scroll">
-    <div class="reading-card" id="cardBasic">
-      <div class="rc-bg mood-basic"></div>
-      <div class="rc-overlay"></div>
-      <div class="rc-badge">연화의 풀이</div>
-    </div>
-    <div class="reading-card disabled">
-      <div class="rc-bg mood-love"></div>
-      <div class="rc-overlay"></div>
-      <div class="rc-label">
-        <div class="rc-title">인연의 재회사주</div>
-        <div class="rc-sub">다시, 그 사람과</div>
+  <div class="card-scroll-wrap">
+    <button type="button" class="scroll-arrow left" id="cardScrollLeft" aria-label="이전 카드">‹</button>
+    <div class="card-scroll" id="cardScroll">
+      <div class="reading-card" id="cardBasic">
+        <div class="rc-bg mood-basic"></div>
+        <div class="rc-overlay"></div>
+        <div class="rc-badge">연화의 풀이</div>
       </div>
-      <div class="rc-soon">준비 중</div>
-    </div>
-    <div class="reading-card" id="cardCompat">
-      <div class="rc-bg mood-match"></div>
-      <div class="rc-overlay"></div>
-      <div class="rc-badge">무료</div>
-      <div class="rc-label">
-        <div class="rc-title">궁합 사주</div>
-        <div class="rc-sub">우리는 어떤 사이일까</div>
+      <div class="reading-card disabled">
+        <div class="rc-bg mood-love"></div>
+        <div class="rc-overlay"></div>
+        <div class="rc-label">
+          <div class="rc-title">인연의 재회사주</div>
+          <div class="rc-sub">다시, 그 사람과</div>
+        </div>
+        <div class="rc-soon">준비 중</div>
+      </div>
+      <div class="reading-card" id="cardCompat">
+        <div class="rc-bg mood-match"></div>
+        <div class="rc-overlay"></div>
+        <div class="rc-badge">무료</div>
+        <div class="rc-label">
+          <div class="rc-title">궁합 사주</div>
+          <div class="rc-sub">우리는 어떤 사이일까</div>
+        </div>
       </div>
     </div>
+    <button type="button" class="scroll-arrow right" id="cardScrollRight" aria-label="다음 카드">›</button>
   </div>
 
 </div>
@@ -1390,6 +1409,14 @@ document.getElementById('cardCompat').addEventListener('click', ()=>{
 });
 document.getElementById('compatHomeBtn').addEventListener('click', ()=> showScreen('screenHome'));
 document.getElementById('compatResetBtn').addEventListener('click', ()=> showScreen('screenHome'));
+
+const cardScrollTrack = document.getElementById('cardScroll');
+document.getElementById('cardScrollLeft').addEventListener('click', ()=>{
+  cardScrollTrack.scrollBy({ left: -cardScrollTrack.clientWidth * 0.85, behavior: 'smooth' });
+});
+document.getElementById('cardScrollRight').addEventListener('click', ()=>{
+  cardScrollTrack.scrollBy({ left: cardScrollTrack.clientWidth * 0.85, behavior: 'smooth' });
+});
 
 function playDoorTransition(onMidpoint){
   const overlay = document.getElementById('doorTransition');
