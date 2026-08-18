@@ -1408,8 +1408,10 @@ function showScreen(id){
 }
 
 document.getElementById('cardBasic').addEventListener('click', ()=>{
-  showScreen('screenChat');
-  startChat();
+  playStepVideo({ video:'videos/greeting.mp4', bot:'' }, ()=>{
+    showScreen('screenChat');
+    startChat();
+  });
 });
 document.getElementById('introBack').addEventListener('click', ()=> showScreen('screenHome'));
 document.getElementById('cardCompat').addEventListener('click', ()=>{
@@ -1453,7 +1455,7 @@ document.getElementById('resetBtn').addEventListener('click', ()=> showScreen('s
 const CITY_OPTIONS = Object.entries(CITIES).map(([key,c])=>({label:c.label, value:key}));
 
 const sajuSteps = [
-  { key:'name',     bot:'만나서 반가워요. 무엇이라 불러드릴까요?', kind:'text', placeholder:'이름 (선택)', optional:true, video:'videos/ask-name.mp4' },
+  { key:'name',     bot:'만나서 반가워요. 무엇이라 불러드릴까요?', kind:'text', placeholder:'이름 (선택)', optional:true },
   { key:'gender',   bot:'성별을 알려주세요.', kind:'choice', options:[{label:'남자',value:'남'},{label:'여자',value:'여'}], video:'videos/ask-gender.mp4' },
   { key:'date',     bot:'태어난 날짜가 언제예요? (양력 기준)', kind:'date', video:'videos/ask-date.mp4' },
   { key:'time',     bot:'태어난 시각도 알면 훨씬 정확하게 볼 수 있어요. 기억나시나요?', kind:'time', video:'videos/ask-time.mp4' },
