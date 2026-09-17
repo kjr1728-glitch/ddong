@@ -19,9 +19,8 @@ from pathlib import Path
 
 import config
 
-# 컷 사이 크로스페이드 길이(프레임). 컷이 이보다 짧으면 전환을 생략한다.
-TRANSITION_F = 6
-MIN_CLIP_FOR_TRANSITION_F = TRANSITION_F * 3
+TRANSITION_F = config.TRANSITION_F
+MIN_CLIP_FOR_TRANSITION_F = config.MIN_CLIP_FOR_TRANSITION_F
 
 
 def lay_out(clips: list[dict]) -> tuple[list[int], list[int], int]:
@@ -91,15 +90,20 @@ def render_timeline(clips: list[dict], transitions: list[int]) -> str:
 
 def render_data(edl: dict, starts: list[int], total: int) -> str:
     # 자막 타이밍을 전환 겹침이 반영된 실제 시작 프레임 기준으로 다시 계산한다.
+    # 한 비트가 여러 컷으로 나뉘어도 자막은 비트 전체를 덮어야 한다.
+    # 같은 beat 에 속한 연속 컷을 묶어 하나의 자막 구간으로 만든다.
     captions = []
     for clip, start_f in zip(edl["clips"], starts):
-        if not clip.get("text"):
-            continue
-        captions.append({
-            "text": clip["text"],
-            "startMs": int(start_f / edl["fps"] * 1000),
-            "endMs": int((start_f + clip["duration_f"]) / edl["fps"] * 1000),
-        })
+        end_ms = int((start_f + clip["duration_f"]) / edl["fps"] * 1000)
+        if clip.get("text"):
+            captions.append({
+                "text": clip["text"],
+                "startMs": int(start_f / edl["fps"] * 1000),
+                "endMs": end_ms,
+            })
+        elif captions:
+            # 텍스트 없는 컷은 직전 비트의 이어지는 컷이므로 자막을 늘린다.
+            captions[-1]["endMs"] = end_ms
 
     audio = edl.get("audio")
     audio_ts = "null"

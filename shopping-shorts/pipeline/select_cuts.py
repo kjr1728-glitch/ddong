@@ -23,6 +23,9 @@ import config
 
 TARGET_ASPECT = config.WIDTH / config.HEIGHT
 
+# 이보다 짧게 남은 자투리는 새 컷을 만들지 않고 버린다.
+MIN_CLIP_S = 0.4
+
 
 class SelectionError(RuntimeError):
     pass
@@ -93,6 +96,73 @@ def distribute(beats: list[dict], total_s: float) -> list[float]:
     return [total_s * w / total_w for w in weights]
 
 
+def transition_overlap_f(clips: list[dict]) -> int:
+    """전환 때문에 줄어드는 총 프레임 수. gen_timeline 의 규칙과 같아야 한다."""
+    total = 0
+    for current, following in zip(clips, clips[1:]):
+        if (current["duration_f"] >= config.MIN_CLIP_FOR_TRANSITION_F
+                and following["duration_f"] >= config.MIN_CLIP_FOR_TRANSITION_F):
+            total += config.TRANSITION_F
+    return total
+
+
+def lay_clips(beats: list[dict], candidates: list, target_total_s: float) -> list[dict]:
+    """주어진 총 길이에 맞춰 비트별로 컷을 배치한다."""
+    durations = distribute(beats, target_total_s)
+    used: set[str] = set()
+    clips: list[dict] = []
+    last_scene_id: str | None = None
+
+    for beat, want_s in zip(beats, durations):
+        # 한 비트가 어떤 구간 하나보다 길면 여러 컷으로 나눠 덮는다.
+        # 쇼츠에서는 한 문장을 2~3컷으로 받는 편이 오히려 자연스럽다.
+        remaining = want_s
+        first_of_beat = True
+
+        while remaining > MIN_CLIP_S:
+            # 직전 컷과 같은 구간은 제외한다. 같은 그림이 바로 이어지면
+            # 편집이 아니라 재생 오류처럼 보인다.
+            pool = [c for c in candidates if c[0]["id"] != last_scene_id] or candidates
+            scene, source = max(
+                pool,
+                key=lambda pair: score(beat, pair[0], pair[1], used, remaining),
+            )
+            used.add(scene["id"])
+            last_scene_id = scene["id"]
+
+            take_s = min(remaining, scene["duration"])
+            if take_s <= 0:
+                break
+
+            clips.append({
+                "beat": beat["id"],
+                "role": beat.get("role", ""),
+                "kind": "video",
+                "source_id": source["id"],
+                "scene_id": scene["id"],
+                "file": source["file"],
+                "src_start_s": scene["start"],
+                "src_end_s": round(scene["start"] + take_s, 3),
+                "from_f": 0,   # 배치가 끝난 뒤 다시 매긴다
+                "duration_f": max(int(round(take_s * config.FPS)), 1),
+                "trim_before_f": int(round(scene["start"] * config.FPS)),
+                # 잘라낼 때 살릴 지점 (0~1, 0.5 가 중앙). 인물이 치우친 컷은 여기를 조정한다.
+                "focus": {"x": 0.5, "y": 0.5},
+                "crop_loss": crop_loss(source["width"], source["height"]),
+                "offset_percent": focus_offset(
+                    source["width"], source["height"], 0.5, 0.5),
+                # punch-in: 컷 안에서 아주 천천히 밀어 넣어 정지된 느낌을 없앤다.
+                "zoom": {"from": 1.0, "to": 1.08},
+                "source_has_audio": source.get("has_audio", False),
+                # 자막은 비트당 한 줄이므로 첫 컷에만 붙인다.
+                "text": beat.get("text", "") if first_of_beat else "",
+            })
+            remaining -= take_s
+            first_of_beat = False
+
+    return clips
+
+
 def build_edl(script: dict, index: dict, narration: dict | None) -> dict:
     owned = [s for s in index.get("sources", []) if s.get("rights") == "owned"]
     if not owned:
@@ -107,53 +177,38 @@ def build_edl(script: dict, index: dict, narration: dict | None) -> dict:
         raise SelectionError("script.json 에 beats 가 없습니다.")
 
     if narration:
-        durations = distribute(beats, narration["duration_s"])
+        base_total_s = narration["duration_s"]
     else:
-        durations = [float(b.get("duration_s", 2.5)) for b in beats]
+        base_total_s = sum(float(b.get("duration_s", 2.5)) for b in beats)
 
     candidates = [(sc, src) for src in owned for sc in src["scenes"]]
-    used: set[str] = set()
-    clips: list[dict] = []
+
+    # 전환이 타임라인을 줄이므로 줄어든 만큼 더 길게 배치해 나레이션을 덮는다.
+    # 컷 수가 바뀌면 겹침도 바뀌므로 몇 번 반복해 수렴시킨다.
+    target_s = base_total_s
+    clips = lay_clips(beats, candidates, target_s)
+    for _ in range(6):
+        effective_f = sum(c["duration_f"] for c in clips) - transition_overlap_f(clips)
+        shortfall_f = round(base_total_s * config.FPS) - effective_f
+        if shortfall_f <= 1:
+            break
+        target_s += shortfall_f / config.FPS
+        clips = lay_clips(beats, candidates, target_s)
+
+    if not clips:
+        raise SelectionError("쓸 수 있는 구간을 찾지 못했습니다.")
+
+    # 배치가 끝난 뒤 시작 프레임을 매긴다 (전환 겹침은 gen_timeline 이 반영).
     cursor_f = 0
-
-    for beat, want_s in zip(beats, durations):
-        best = max(candidates, key=lambda pair: score(beat, pair[0], pair[1], used, want_s))
-        scene, source = best
-        used.add(scene["id"])
-
-        # 구간이 필요한 길이보다 길면 앞에서부터 필요한 만큼만 쓴다.
-        take_s = min(want_s, scene["duration"])
-        duration_f = max(int(round(take_s * config.FPS)), 1)
-
-        clips.append({
-            "beat": beat["id"],
-            "role": beat.get("role", ""),
-            "kind": "video",
-            "source_id": source["id"],
-            "scene_id": scene["id"],
-            "file": source["file"],
-            "src_start_s": scene["start"],
-            "src_end_s": round(scene["start"] + take_s, 3),
-            "from_f": cursor_f,
-            "duration_f": duration_f,
-            "trim_before_f": int(round(scene["start"] * config.FPS)),
-            # 잘라낼 때 살릴 지점 (0~1, 0.5 가 중앙). 인물이 치우친 컷은 여기를 조정한다.
-            "focus": {"x": 0.5, "y": 0.5},
-            "crop_loss": crop_loss(source["width"], source["height"]),
-            "offset_percent": focus_offset(
-                source["width"], source["height"], 0.5, 0.5),
-            # punch-in: 컷 안에서 아주 천천히 밀어 넣어 정지된 느낌을 없앤다.
-            "zoom": {"from": 1.0, "to": 1.08},
-            "source_has_audio": source.get("has_audio", False),
-            "text": beat.get("text", ""),
-        })
-        cursor_f += duration_f
+    for clip in clips:
+        clip["from_f"] = cursor_f
+        cursor_f += clip["duration_f"]
 
     total_f = cursor_f
+    effective_f = total_f - transition_overlap_f(clips)
     video_f = sum(c["duration_f"] for c in clips if c["kind"] == "video")
     ratio = video_f / total_f if total_f else 0.0
 
-    # 자막 — 각 컷의 화면 시간에 맞춰 붙인다.
     captions = []
     for clip in clips:
         if not clip["text"]:
@@ -171,6 +226,9 @@ def build_edl(script: dict, index: dict, narration: dict | None) -> dict:
         "height": config.HEIGHT,
         "duration_f": total_f,
         "duration_s": round(total_f / config.FPS, 3),
+        # 전환 겹침을 반영한 실제 완성본 길이 — 렌더 가드는 이 값을 본다.
+        "effective_duration_f": effective_f,
+        "effective_duration_s": round(effective_f / config.FPS, 3),
         "audio": narration,
         "clips": clips,
         "captions": captions,
@@ -178,7 +236,7 @@ def build_edl(script: dict, index: dict, narration: dict | None) -> dict:
         "stats": {
             "real_video_ratio": round(ratio, 4),
             "required_ratio": config.MIN_REAL_VIDEO_RATIO,
-            "distinct_scenes_used": len(used),
+            "distinct_scenes_used": len({c["scene_id"] for c in clips}),
         },
     }
 

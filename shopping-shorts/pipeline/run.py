@@ -118,7 +118,8 @@ def cmd_status(_: argparse.Namespace) -> int:
         print("나레이션 narration.mp3  : 없음")
     edl = load_edl()
     if edl:
-        print(f"EDL edl.json            : 컷 {len(edl['clips'])}개, {edl['duration_s']}초, "
+        final_s = edl.get("effective_duration_s", edl["duration_s"])
+        print(f"EDL edl.json            : 컷 {len(edl['clips'])}개, {final_s}초, "
               f"실사 {edl['stats']['real_video_ratio']:.0%}")
     else:
         print("EDL edl.json            : 없음")
@@ -183,8 +184,10 @@ def cmd_render(args: argparse.Namespace) -> int:
 
     edl = load_edl()
     assert edl is not None
-    if not (config.MIN_DURATION_S <= edl["duration_s"] <= config.MAX_DURATION_S):
-        print(f"\n[경고] 길이 {edl['duration_s']:.1f}초 — 목표 범위 "
+    # 전환 겹침이 반영된 실제 완성본 길이로 판단한다.
+    final_s = edl.get("effective_duration_s", edl["duration_s"])
+    if not (config.MIN_DURATION_S <= final_s <= config.MAX_DURATION_S):
+        print(f"\n[경고] 길이 {final_s:.1f}초 — 목표 범위 "
               f"{config.MIN_DURATION_S}~{config.MAX_DURATION_S}초를 벗어났습니다.")
 
     config.OUT_DIR.mkdir(parents=True, exist_ok=True)
