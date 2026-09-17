@@ -67,6 +67,19 @@ def main():
         action="store_true",
         help="트렌드 데이터가 이미 있어도 다시 조회",
     )
+    parser.add_argument(
+        "--upload",
+        action="store_true",
+        help="완성된 영상을 유튜브에 올립니다 (OAuth 인증 필요)",
+    )
+    parser.add_argument(
+        "--privacy",
+        default="private",
+        choices=["private", "unlisted", "public"],
+        help="업로드 공개 설정. 기본값 private — 확인 전에 전체 공개되는 것을 막습니다.",
+    )
+    parser.add_argument("--title", default=None, help="업로드 제목 (생략 시 스크립트에서 생성)")
+    parser.add_argument("--tags", default=None, help="쉼표로 구분된 업로드 태그")
     args = parser.parse_args()
 
     today = datetime.date.today().isoformat()
@@ -168,8 +181,28 @@ def main():
         ]
     )
 
-    print(f"\n파이프라인 완료: {video_file}")
-    print(f"자막 파일(업로드 시 따로 올릴 수 있음): {srt_file}")
+    print(f"\n영상 완성: {video_file}")
+
+    # 6단계: 유튜브 업로드 (명시적으로 요청했을 때만)
+    if args.upload:
+        upload_cmd = [
+            sys.executable,
+            script_path("youtube_upload.py"),
+            "--video", video_file,
+            "--script", script_file,
+            "--srt", srt_file,
+            "--privacy", args.privacy,
+        ]
+        if args.title:
+            upload_cmd += ["--title", args.title]
+        if args.tags:
+            upload_cmd += ["--tags", args.tags]
+        run(upload_cmd)
+    else:
+        print(f"자막 파일(업로드 시 함께 올라갑니다): {srt_file}")
+        print("유튜브에 자동으로 올리려면 --upload를 붙이세요.")
+
+    print("\n파이프라인 완료")
 
 
 if __name__ == "__main__":

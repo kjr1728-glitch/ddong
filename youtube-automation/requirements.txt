@@ -1,4 +1,7 @@
 google-api-python-client==2.*
+# 유튜브 업로드용 OAuth 인증 (업로드는 API 키가 아니라 계정 로그인이 필요합니다)
+google-auth-oauthlib==1.*
+google-auth-httplib2==0.*
 pytrends==4.*
 edge-tts==6.*
 requests==2.*
