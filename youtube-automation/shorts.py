@@ -100,6 +100,10 @@ def main():
         "--privacy", default="private", choices=["private", "unlisted", "public"],
         help="업로드 공개 설정. 기본 private",
     )
+    parser.add_argument(
+        "--manual", action="store_true",
+        help="쿠팡 API 대신 직접 적은 상품 목록을 씁니다 (최종 승인 전에 사용)",
+    )
     parser.add_argument("--run-dir", default=None)
     args = parser.parse_args()
 
@@ -114,6 +118,10 @@ def main():
     # 1단계: 상품 고르기
     if os.path.exists(products_file):
         print(f"\n[건너뜀] 상품 목록이 이미 있습니다: {products_file}")
+    elif args.manual:
+        # 쿠팡 API는 최종 승인(누적 판매 15만원) 후에야 열립니다.
+        # 그전까지는 직접 적은 목록으로 만듭니다.
+        run([sys.executable, script_path("manual_products.py"), "--output", products_file])
     else:
         run([sys.executable, script_path("product_picker.py"),
              "--count", str(needed), "--output", products_file])
@@ -124,8 +132,9 @@ def main():
     if len(all_products) < args.per_video:
         sys.exit(f"상품이 {len(all_products)}개뿐이라 영상을 만들 수 없습니다.")
 
-    # 2단계: 수수료가 붙는 링크로 변환
-    add_affiliate_links(all_products)
+    # 2단계: 수수료가 붙는 링크로 변환 (직접 적은 목록은 이미 파트너스 링크입니다)
+    if not args.manual:
+        add_affiliate_links(all_products)
     with open(products_file, "w", encoding="utf-8") as f:
         json.dump(all_products, f, ensure_ascii=False, indent=2)
 

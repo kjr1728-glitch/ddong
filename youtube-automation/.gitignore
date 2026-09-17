@@ -7,6 +7,8 @@ token.json
 output/
 assets/broll/
 assets/product_images/
+assets/my_products/*
+!assets/my_products/.gitkeep
 assets/music/*
 !assets/music/README.md
 !assets/music/.gitkeep
