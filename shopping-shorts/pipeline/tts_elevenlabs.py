@@ -37,6 +37,20 @@ def _request(url: str, *, method: str = "GET", body: bytes | None = None,
     return urllib.request.urlopen(req, timeout=timeout)
 
 
+def _connection_hint(reason: object) -> str:
+    """연결 실패 원인을 사람이 읽을 수 있는 안내로 바꾼다."""
+    text = str(reason)
+    if "403" in text or "Forbidden" in text or "Tunnel connection failed" in text:
+        return (
+            "api.elevenlabs.io 가 이 환경의 네트워크 정책(egress)에 막혀 있습니다. "
+            "키나 크레딧 문제가 아닙니다. 해결 방법은 둘 중 하나입니다: "
+            "(1) 환경 설정의 network egress 허용 목록에 api.elevenlabs.io 를 추가한다, "
+            "(2) 이 단계만 로컬 PC 에서 돌린 뒤 public/narration.mp3 를 가져온다. "
+            f"(원문: {text})"
+        )
+    return f"ElevenLabs 에 연결할 수 없습니다: {text}"
+
+
 def _api_key() -> str:
     if not config.ELEVENLABS_API_KEY:
         raise TTSUnavailable(
@@ -56,7 +70,7 @@ def check_credits() -> dict:
         detail = exc.read().decode("utf-8", "replace")[:300]
         raise TTSUnavailable(f"크레딧 조회 실패 (HTTP {exc.code}): {detail}") from exc
     except urllib.error.URLError as exc:
-        raise TTSUnavailable(f"ElevenLabs 에 연결할 수 없습니다: {exc.reason}") from exc
+        raise TTSUnavailable(_connection_hint(exc.reason)) from exc
 
     used = int(sub.get("character_count", 0))
     limit = int(sub.get("character_limit", 0))
