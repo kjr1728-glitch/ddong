@@ -12,7 +12,7 @@ vidIQ 없이 무료 도구만으로 구성한 "트렌드 리서치 → 스크립
 | 스크립트 작성 | Claude Code (직접 대화) 또는 Anthropic API | Claude Code 구독 안에 포함 / API는 종량제 |
 | 나레이션(TTS) + 자막 | edge-tts (Microsoft Edge 음성 엔진, 오픈소스 래퍼) | 완전 무료 |
 | B-roll 영상 소스 | Pexels API | 무료 (API 키만 발급) |
-| 영상 합성 | ffmpeg + moviepy | 완전 무료, 오픈소스 |
+| 영상 합성 | moviepy 2.x (ffmpeg 내장) | 완전 무료, 오픈소스 |
 | 유튜브 업로드 | YouTube Data API v3 (OAuth) | 무료 (할당량 소모) |
 
 ## 사전 준비
@@ -22,16 +22,11 @@ vidIQ 없이 무료 도구만으로 구성한 "트렌드 리서치 → 스크립
 pip install -r requirements.txt
 ```
 
-### 2. ffmpeg + ImageMagick 설치 (시스템 레벨)
-```bash
-# Mac
-brew install ffmpeg imagemagick
-# Ubuntu/Debian
-sudo apt install ffmpeg imagemagick
-# Windows: https://ffmpeg.org/download.html 에서 다운로드 후 PATH 등록
-```
-ImageMagick은 영상에 자막을 태워 넣을 때만 필요합니다. 없으면 자막 없이 영상만
-렌더링되고, 자막 파일(.srt)은 따로 남으니 유튜브 업로드 시 자막으로 올리면 됩니다.
+### 2. 추가 설치 프로그램 (없음)
+
+영상 인코딩에 쓰는 ffmpeg는 `pip install` 할 때 함께 설치되고,
+자막은 Pillow로 직접 그리므로 ImageMagick도 필요 없습니다.
+따로 설치하실 프로그램은 없습니다.
 
 ### 3. 무료 API 키 발급 (둘 다 무료)
 - **YouTube Data API v3 키**: Google Cloud Console → API 및 서비스 → 사용 설정 → "YouTube Data API v3" → 사용자 인증 정보에서 API 키 생성
@@ -107,8 +102,8 @@ python scripts/video_synthesis.py --narration output/narration.mp3 \
 → `final_video.mp4` 생성 (나레이션 + b-roll + 자막)
 
 같은 이름의 `.srt`가 있으면 그 타이밍을 쓰고, 없으면 문장 균등 분할로 대체합니다.
-한글 자막 폰트는 시스템에서 자동으로 찾으며, `--font`로 직접 지정할 수도 있습니다.
-자막 없이 뽑으려면 `--no-captions`를 붙이세요.
+한글 자막 폰트는 자동으로 찾습니다. 윈도우는 맑은 고딕, 맥은 애플 고딕을 씁니다.
+`--font`로 폰트 파일을 직접 지정할 수도 있고, `--no-captions`를 붙이면 자막 없이 뽑습니다.
 
 ## 처음 시작하기 (순서대로)
 
@@ -120,8 +115,6 @@ git clone https://github.com/kjr1728-glitch/ddong
 cd ddong/youtube-automation
 pip install -r requirements.txt
 ```
-
-**2. ffmpeg와 ImageMagick 설치** (위 "사전 준비" 참고)
 
 **3. 무료 API 키 두 개 발급해서 `.env`에 넣기**
 ```bash
@@ -216,6 +209,5 @@ crontab -e
   (남성 음성: `ko-KR-InJoonNeural`)
 - Pexels는 상업적 이용 가능한 무료 스톡 영상만 제공하므로 저작권 걱정 없이 사용 가능
 - YouTube Data API 무료 할당량을 초과하면 다음 날 자정(태평양시간)에 리셋됨
-- `moviepy 1.0.3`은 Pillow 10에서 삭제된 API를 쓰기 때문에 `requirements.txt`가
-  Pillow를 9.x로 고정해 둡니다. 임의로 올리면 합성 단계에서 멈춥니다.
+- 영상 합성은 moviepy 2.x 기준입니다. 1.0.3과는 함수 이름이 다르므로 내려쓰지 마세요.
 - 세로 쇼츠로 뽑으려면 `scripts/video_synthesis.py`의 `TARGET_SIZE`를 `(1080, 1920)`으로 바꾸세요.
