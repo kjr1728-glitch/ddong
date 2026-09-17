@@ -137,6 +137,33 @@ python shorts.py --videos 5 --per-video 4
 
 기준을 바꾸고 싶으면 `product_picker.py` 맨 위의 목록과 숫자를 고치면 됩니다.
 
+## 직접 찍은 영상으로 만들기 (제일 잘 되는 방식)
+
+잘 되는 쇼핑 쇼츠는 예외 없이 **사람이 실제로 물건을 쓰는 장면**을 보여줍니다.
+상품 이미지만으로는 그 느낌이 안 나옵니다. 그 장면은 사람이 찍어야 하고,
+나머지 편집은 도구가 합니다.
+
+```bash
+# assets/my_footage/<상품이름>/ 에 찍은 영상과 script.txt를 넣은 뒤
+python scripts/narration.py --script assets/my_footage/선풍기/script.txt \
+    --output assets/my_footage/선풍기/narration.mp3
+python scripts/footage_shorts.py --footage-dir assets/my_footage/선풍기 \
+    --output output/shorts/선풍기.mp4
+```
+
+도구가 하는 일입니다.
+
+- 찍어온 영상을 **0.6~0.9초짜리 컷으로 쪼개** 빠르게 이어 붙입니다
+- 나레이션을 만들고 **말에 맞춰 자막**을 띄웁니다
+- 자막은 **반투명 둥근 박스에 흰 글씨**로, 화면 위에서 5분의 1 지점에 놓습니다
+- 컷이 바뀔 때 **효과음**을 넣고 **배경음악**을 깝니다
+
+찍는 방법은 `assets/my_footage/README.md`에 자세히 적어뒀습니다.
+손이 나오게, 짧게 여러 개, 각도를 바꿔가며, 밝은 곳에서 세로로 찍으시면 됩니다.
+30초에서 1분 분량이면 충분합니다.
+
+**판매자 상세페이지 영상을 받아 쓰지 마세요.** 저작권 침해이고 채널이 삭제됩니다.
+
 ## 편집 방식
 
 말에 맞춰 톡톡 튀는 자막과 빠른 장면 전환이 들어갑니다.

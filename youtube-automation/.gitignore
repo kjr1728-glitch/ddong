@@ -10,6 +10,9 @@ assets/product_images/
 assets/sfx/*
 !assets/sfx/README.md
 !assets/sfx/.gitkeep
+assets/my_footage/*
+!assets/my_footage/README.md
+!assets/my_footage/.gitkeep
 assets/my_products/*
 !assets/my_products/.gitkeep
 assets/music/*
