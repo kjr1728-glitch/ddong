@@ -1,0 +1,13 @@
+node_modules/
+out/
+public/clips/
+public/narration.mp3
+reference/
+data/thumbs/
+sources/*.mp4
+sources/*.mov
+sources/*.mkv
+sources/*.webm
+.env
+__pycache__/
+*.pyc
