@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import os
 import subprocess
 import sys
@@ -92,10 +93,18 @@ def cmd_status(_: argparse.Namespace) -> int:
         refs = index.get("references", [])
         total_s = sum(s["duration"] for s in owned)
         scenes = sum(len(s["scenes"]) for s in owned)
-        print(f"3. 내 영상              : {len(owned)}개, {total_s:.1f}초")
+        missing = [s for s in owned
+                   if not (config.SOURCES_DIR / s["file"]).exists()]
+        print(f"3. 내 영상              : {len(owned)}개, {total_s:.1f}초"
+              + (f"  ⚠ {len(missing)}개 파일 없음" if missing else ""))
         for s in owned:
+            mark = "" if (config.SOURCES_DIR / s["file"]).exists() else "  ⚠ 파일 없음"
             print(f"     {s['file']:<24} {s['duration']:>6.1f}s "
-                  f"{s['width']}x{s['height']} 구간 {len(s['scenes'])}개")
+                  f"{s['width']}x{s['height']} 구간 {len(s['scenes'])}개{mark}")
+        if missing:
+            # sources/*.mp4 는 .gitignore 대상이므로 새로 clone 한 컨테이너에서는
+            # 인덱스만 남고 실제 파일이 없다. 그대로 build 하면 FileNotFoundError 가 난다.
+            print("   → `run.py seed` 로 저장소의 videos/ 클립을 sources/ 에 채우세요")
         print(f"5. 장면 인덱스          : 총 {scenes}개 구간")
         if refs:
             print(f"   레퍼런스(분석 전용)  : {len(refs)}개 — 최종본 삽입 금지")
@@ -124,6 +133,37 @@ def cmd_status(_: argparse.Namespace) -> int:
     else:
         print("EDL edl.json            : 없음")
     print("=" * 62)
+    return 0
+
+
+def cmd_seed(_: argparse.Namespace) -> int:
+    """저장소에 포함된 videos/ 클립을 sources/ 로 복사한다.
+
+    sources/*.mp4 는 .gitignore 대상이라 clone 직후에는 비어 있다. 원격 컨테이너는
+    세션마다 새로 clone 하므로, 이 단계가 없으면 build 가 파일을 찾지 못한다.
+    """
+    repo_videos = config.PROJECT_ROOT.parent / "videos"
+    if not repo_videos.is_dir():
+        print(f"저장소 videos/ 폴더가 없습니다: {repo_videos}")
+        return 1
+
+    config.SOURCES_DIR.mkdir(parents=True, exist_ok=True)
+    copied = skipped = 0
+    for clip in sorted(repo_videos.glob("*.mp4")):
+        dest = config.SOURCES_DIR / clip.name
+        if dest.exists():
+            print(f"  이미 있음 — {clip.name}")
+            skipped += 1
+            continue
+        shutil.copy2(clip, dest)
+        print(f"  복사 — {clip.name} ({dest.stat().st_size / 1e6:.1f}MB)")
+        copied += 1
+
+    if not copied and not skipped:
+        print("videos/ 에 복사할 mp4 가 없습니다.")
+        return 1
+    print(f"→ sources/ 준비 완료 (새로 복사 {copied}개, 기존 {skipped}개)")
+    print("  내 제품 영상을 쓰려면 sources/ 에 직접 넣고 `run.py index` 를 실행하세요.")
     return 0
 
 
@@ -223,6 +263,9 @@ def main() -> int:
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     sub.add_parser("status", help="현황 점검").set_defaults(fn=cmd_status)
+
+    sub.add_parser("seed", help="저장소 videos/ 클립을 sources/ 로 복사"
+                   ).set_defaults(fn=cmd_seed)
 
     p_index = sub.add_parser("index", help="소스 장면 인덱싱")
     p_index.add_argument("--include-reference", action="store_true")

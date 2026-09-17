@@ -22,6 +22,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 
 import config
 
@@ -65,6 +66,37 @@ def resolve_local(source: str) -> Path:
         f"파일을 찾을 수 없습니다: {source}\n"
         f"  다음 위치를 확인했습니다: {direct}, {inside}"
     )
+
+
+def diagnose_failure(source: str, output: str) -> str:
+    """watch 실패 원인을 사람이 읽을 수 있는 한 줄 안내로 바꾼다.
+
+    원격 컨테이너에서는 youtube.com 이 환경의 egress 정책에 막혀 있는 경우가
+    많다. 그때 yt-dlp 는 재시도 로그를 수십 줄 쏟아내므로, 원인을 구분해서
+    무엇을 하면 되는지 바로 알려준다.
+    """
+    egress = ("Tunnel connection failed" in output
+              or "Unable to connect to proxy" in output
+              or "403 Forbidden" in output)
+
+    if egress and not is_local(source):
+        host = (urlparse(source).hostname or "이 호스트").lower()
+        return (
+            f"{host} 가 이 환경의 네트워크 정책(egress)에 막혀 있습니다. "
+            "yt-dlp 나 watch 의 문제가 아니고, 재시도로는 풀리지 않습니다. "
+            "해결 방법은 둘 중 하나입니다: "
+            f"(1) 환경 설정의 network egress 허용 목록에 {host} 를 추가한다 "
+            "— 유튜브는 메타데이터와 미디어가 다른 호스트에서 오므로 "
+            "youtube.com, www.youtube.com, googlevideo.com 을 함께 열어야 합니다, "
+            "(2) 영상을 직접 내려받아 reference/ 에 넣고 파일명으로 다시 부른다 "
+            "— 이 스크립트는 로컬 파일 경로도 그대로 받습니다."
+        )
+
+    if "yt-dlp" in output and "not found" in output:
+        return ("yt-dlp 가 설치되어 있지 않습니다. "
+                "bash ../.claude/hooks/install-skills.sh --force 로 설치됩니다.")
+
+    return "watch 실행이 실패했습니다. 아래 리포트에서 원문을 확인하세요."
 
 
 def run_watch(source: str, out_dir: Path, detail: str) -> tuple[bool, str]:
@@ -126,7 +158,8 @@ def main() -> int:
         report.write_text(output)
 
         if not ok:
-            print(f"  실패 — {report.relative_to(config.PROJECT_ROOT)} 참고")
+            print(f"  실패 — {diagnose_failure(source, output)}")
+            print(f"         원문 리포트: {report.relative_to(config.PROJECT_ROOT)}")
         else:
             frames = sorted(out_dir.rglob("*.jpg"))
             print(f"  프레임 {len(frames)}장, 리포트 → "

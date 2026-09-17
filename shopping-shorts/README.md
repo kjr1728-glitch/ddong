@@ -30,6 +30,7 @@ ffmpeg, ffprobe, Remotion 로컬 렌더, 로컬 Python/Node 도구.
 
 ```bash
 python3 pipeline/run.py status                  # 현황 점검 (키/크레딧/소스/인덱스)
+python3 pipeline/run.py seed                    # 0. 저장소 videos/ 클립 → sources/
 python3 pipeline/run.py index                   # 1. 소스를 장면 단위로 인덱싱
 python3 pipeline/run.py analyze <url> [<url>]   # 2. 레퍼런스를 watch 로 분석
 #                                                  3. data/script.json 에 대본 확정
@@ -113,6 +114,34 @@ Remotion 은 편집 가능한 컷을 `.map()` 으로 만들면 안 되므로, **
 화면만 확인하려면 `render --draft` 를 씁니다. 파일명에 `NO-AUDIO` 가 붙고 최종본
 경로에 저장되지 않습니다.
 
+## 네트워크(egress) 제약
+
+`sources/*.mp4` 는 `.gitignore` 대상이라 **새로 clone 한 컨테이너에는 실제 파일이
+없습니다**. 인덱스(`data/sources.index.json`)만 남아 `status` 는 영상이 있는 것처럼
+보이지만 `build` 가 `FileNotFoundError` 로 멈춥니다. `run.py seed` 가 저장소의
+`videos/` 클립을 채워 넣고, `status` 는 파일이 없으면 `⚠ 파일 없음` 을 표시합니다.
+
+원격 세션(Claude Code on the web)은 환경의 egress 정책이 호스트를 막을 수 있습니다.
+막히면 CONNECT 가 403 으로 거부되고, 재시도로는 풀리지 않습니다.
+
+| 막히는 호스트 | 멈추는 단계 | 우회 |
+|---|---|---|
+| `youtube.com`, `www.youtube.com`, `googlevideo.com` | 2. 레퍼런스 분석 | 영상을 직접 내려받아 `reference/` 에 넣고 **파일 경로로** 호출 |
+| `api.elevenlabs.io` | 4. TTS → 최종 렌더 차단 | 이 단계만 로컬 PC 에서 돌린 뒤 `public/narration.mp3` 를 가져온다 |
+
+`analyze_reference.py` 와 `tts_elevenlabs.py` 는 egress 차단을 키/크레딧 문제와
+구분해서 안내합니다. 현재 차단 상태는 다음으로 확인합니다:
+
+```bash
+curl -sS "$HTTPS_PROXY/__agentproxy/status"     # recentRelayFailures 확인
+```
+
+레퍼런스를 로컬 파일로 분석하는 예:
+
+```bash
+python3 pipeline/analyze_reference.py reference/ref1.mp4 reference/ref2.mp4 --detail balanced
+```
+
 ## 파일 구조
 
 ```
@@ -148,4 +177,14 @@ data/
 `data/script.json` 은 **파이프라인 검증용 샘플 대본**입니다. 실제 제품 영상과
 대본으로 교체해서 쓰세요.
 
-검증 완료: 6컷 매칭 → 코드 생성 → 1080x1920 MP4 렌더(13.07초, 실사 100%).
+`data/edl.json` 에 커밋된 것은 **나레이션(21.6초)에 맞춰 생성된 12컷 EDL** 입니다.
+
+로컬 단계는 이 환경에서 재검증했습니다 — `seed` → `cut --allow-no-audio` →
+`build` → `render --draft` 가 1080x1920 / 15.73초 / 실사 100% 로 통과합니다.
+(음성 없이 돌리면 컷 길이 배분이 달라져 10컷 15.7초가 됩니다. 커밋된 EDL 을
+덮어쓰지 않으려면 나레이션을 먼저 준비하세요.)
+
+**미완료** — 레퍼런스 6개 분석과 TTS 는 위 egress 정책에 막혀 있습니다.
+`data/reference.analysis.json` 에 6개 URL 이 `watch_ok: false`,
+`rights: reference-only` 로 기록되어 있고 `analysis` 는 빈 양식입니다.
+차단이 풀리거나 영상 파일을 `reference/` 에 넣으면 그 지점부터 이어집니다.
