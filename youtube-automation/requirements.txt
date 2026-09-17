@@ -3,7 +3,10 @@ google-api-python-client==2.*
 google-auth-oauthlib==1.*
 google-auth-httplib2==0.*
 pytrends==4.*
-edge-tts==6.*
+# edge-tts는 마이크로소프트가 접속 방식을 바꿀 때마다 403 오류가 나는 일이 반복됩니다.
+# 그때마다 최신 버전에서 대응이 들어가므로 버전을 묶지 않습니다.
+# 403이 나면 먼저 pip install --upgrade edge-tts 를 해보세요.
+edge-tts>=7.2
 requests==2.*
 python-dotenv==1.*
 moviepy>=2.1
