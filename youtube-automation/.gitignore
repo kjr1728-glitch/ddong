@@ -6,6 +6,7 @@ token.json
 # 실행 결과물 (영상/음성/다운로드 영상은 용량이 커서 저장소에 넣지 않습니다)
 output/
 assets/broll/
+assets/product_images/
 assets/music/*
 !assets/music/README.md
 !assets/music/.gitkeep
