@@ -18,11 +18,15 @@
     python scripts/shorts_builder.py --products output/products.json --start 0 --count 3
 """
 import argparse
+import glob
 import io
 import json
+import math
 import os
 import re
+import struct
 import subprocess
+import wave
 
 import numpy as np
 import requests
@@ -39,11 +43,20 @@ from moviepy import (
 )
 
 SHORTS_SIZE = (1080, 1920)
-# 상품 카드가 들어갈 세로 구간. 위쪽은 훅 문구, 아래쪽은 이름과 가격 자리입니다.
-PRODUCT_AREA = (400, 1250)
+# 화면을 위에서 아래로 나눠 씁니다. 겹치면 글자가 뭉개지므로 자리를 못 박아둡니다.
+HOOK_Y = 150            # 맨 위 훅 문구
+PRODUCT_AREA = (400, 1230)   # 상품 카드
+CAPTION_Y = 1270        # 말에 맞춘 자막 (또는 상품 이름)
+CAPTION_H = 200
+PRICE_Y = 1520          # 가격
+ROCKET_Y = 1680         # 로켓배송 표시
 SECONDS_PER_PRODUCT = 5.0
 OUTRO_SECONDS = 3.0
-CROSSFADE = 0.35
+CROSSFADE = 0.25          # 짧을수록 화면이 팍팍 넘어갑니다
+PUNCH_ZOOM = 0.12         # 장면이 바뀌는 순간 살짝 들어갔다 나오는 정도
+WORD_POP_SCALE = 1.18     # 단어가 튀어나올 때 커지는 정도
+WORDS_PER_LINE = 3        # 한 번에 띄울 단어 수
+SFX_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "sfx")
 
 MUSIC_VOLUME = 0.10
 MUSIC_FADEOUT = 2.0
@@ -183,7 +196,131 @@ def text_clip(text: str, font: str, size: int, y: int, duration: float, color="w
     )
 
 
-def product_segment(product: dict, hook: str, font: str, cache_dir: str, seconds: float):
+def make_whoosh(path: str, duration: float = 0.28, sample_rate: int = 44100):
+    """
+    장면 전환용 효과음을 직접 만들어 저장한다.
+    받아올 파일이 없어도 되도록 간단한 바람소리를 합성합니다.
+    (assets/sfx 폴더에 직접 넣은 파일이 있으면 그걸 먼저 씁니다.)
+    """
+    frames = int(sample_rate * duration)
+    data = bytearray()
+    state = 0.0
+    for i in range(frames):
+        t = i / frames
+        # 잡음을 저역 통과시켜 '쉭' 하는 소리를 만들고, 앞뒤를 부드럽게 줄입니다
+        noise = math.sin(i * 12.9898) * 43758.5453
+        noise -= math.floor(noise)
+        noise = noise * 2 - 1
+        cutoff = 0.06 + 0.5 * t
+        state += cutoff * (noise - state)
+        envelope = math.sin(math.pi * t) ** 1.6
+        value = int(max(-1.0, min(1.0, state * envelope * 1.6)) * 22000)
+        data += struct.pack("<h", value)
+
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with wave.open(path, "wb") as f:
+        f.setnchannels(1)
+        f.setsampwidth(2)
+        f.setframerate(sample_rate)
+        f.writeframes(bytes(data))
+    return path
+
+
+def find_sfx() -> str:
+    """전환 효과음을 찾는다. 없으면 직접 만들어 쓴다."""
+    for pattern in ("*.wav", "*.mp3", "*.m4a"):
+        found = sorted(glob.glob(os.path.join(SFX_DIR, pattern)))
+        if found:
+            return found[0]
+    generated = os.path.join(SFX_DIR, "_whoosh.wav")
+    if not os.path.exists(generated):
+        make_whoosh(generated)
+    return generated
+
+
+def load_word_timings(narration_path: str):
+    """narration.py가 남긴 단어별 시각을 읽는다"""
+    if not narration_path:
+        return []
+    path = os.path.splitext(narration_path)[0] + ".words.json"
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (ValueError, OSError):
+        return []
+
+
+def group_words(words: list, per_line: int = WORDS_PER_LINE):
+    """
+    단어를 두세 개씩 묶는다. 한 단어씩만 띄우면 너무 정신없고,
+    문장 통째로 띄우면 말과 안 맞아 보입니다.
+    """
+    groups = []
+    for i in range(0, len(words), per_line):
+        chunk = words[i: i + per_line]
+        if not chunk:
+            continue
+        groups.append(
+            {
+                "start": chunk[0]["start"],
+                "end": chunk[-1]["end"],
+                "text": " ".join(w["text"] for w in chunk).strip(),
+            }
+        )
+    return groups
+
+
+def pop_caption_clips(words: list, font: str, total_duration: float):
+    """
+    말에 맞춰 톡톡 튀어나오는 자막.
+    나타나는 순간에 살짝 커졌다가 제자리로 돌아오게 해서 눈에 걸리게 합니다.
+    """
+    if not words or not font:
+        return []
+
+    clips = []
+    for group in group_words(words):
+        start = group["start"]
+        end = min(group["end"] + 0.12, total_duration)
+        length = end - start
+        if length <= 0.05 or not group["text"]:
+            continue
+
+        try:
+            text = TextClip(
+                font=font, text=group["text"], font_size=72, color="white",
+                stroke_color="black", stroke_width=8,
+                method="caption", size=(SHORTS_SIZE[0] - 140, None), text_align="center",
+            )
+        except Exception as e:
+            print(f"[경고] 단어 자막을 만들 수 없어 넘어갑니다 ({e}).")
+            return []
+
+        pop = 0.12  # 이 시간 동안 커졌다가 돌아옵니다
+
+        def scale(t, length=length, pop=pop):
+            if t >= pop:
+                return 1.0
+            # 시작하자마자 확 커졌다가 빠르게 제자리로
+            return 1.0 + (WORD_POP_SCALE - 1.0) * (1 - t / pop)
+
+        clips.append(
+            CompositeVideoClip(
+                [text.resized(scale).with_position("center")],
+                size=(SHORTS_SIZE[0], CAPTION_H),
+            )
+            .with_duration(length)
+            .with_start(start)
+            .with_position(("center", CAPTION_Y))
+        )
+
+    return clips
+
+
+def product_segment(product: dict, hook: str, font: str, cache_dir: str, seconds: float,
+                    show_name: bool = True):
     """상품 하나를 보여주는 한 구간"""
     image = fetch_image(product["image"], cache_dir)
     frame = compose_frame(image)
@@ -197,12 +334,18 @@ def product_segment(product: dict, hook: str, font: str, cache_dir: str, seconds
 
     layers = [background]
     if font:
-        price = f"{product['price']:,}원"
-        layers.append(text_clip(hook, font, 86, 150, seconds))
-        layers.append(text_clip(product["short_name"][:34], font, 58, SHORTS_SIZE[1] - 620, seconds))
-        layers.append(text_clip(price, font, 104, SHORTS_SIZE[1] - 470, seconds, color="#FFE14D", stroke=7))
+        layers.append(text_clip(hook, font, 86, HOOK_Y, seconds))
+        # 말에 맞춘 자막을 쓸 때는 상품 이름을 빼야 합니다. 같은 자리에 겹쳐
+        # 글자가 뭉개지고, 나레이션이 어차피 이름을 읽어줍니다.
+        if show_name:
+            layers.append(text_clip(product["short_name"][:34], font, 58, CAPTION_Y, seconds))
+        layers.append(
+            text_clip(f"{product['price']:,}원", font, 104, PRICE_Y, seconds,
+                      color="#FFE14D", stroke=7)
+        )
         if product.get("rocket"):
-            layers.append(text_clip("로켓배송", font, 44, SHORTS_SIZE[1] - 330, seconds, color="#7FD4FF", stroke=5))
+            layers.append(text_clip("로켓배송", font, 44, ROCKET_Y, seconds,
+                                    color="#7FD4FF", stroke=5))
 
     return CompositeVideoClip(layers, size=SHORTS_SIZE).with_duration(seconds)
 
@@ -241,12 +384,20 @@ def find_music(explicit):
 
 
 def build(products: list, output: str, narration: str, music: str, font: str,
-          seconds_per_product: float, cache_dir: str):
+          seconds_per_product: float, cache_dir: str, use_sfx: bool = True,
+          pop_captions: bool = True):
+    # 말에 맞춘 자막을 쓸 수 있는지 먼저 확인합니다. 쓰면 상품 이름은 빼야
+    # 같은 자리에서 겹치지 않습니다.
+    words = load_word_timings(narration) if pop_captions else []
+    show_name = not bool(words)
+
     segments = []
     for i, product in enumerate(products):
         hook = HOOKS[i % len(HOOKS)]
         try:
-            segments.append(product_segment(product, hook, font, cache_dir, seconds_per_product))
+            segments.append(
+                product_segment(product, hook, font, cache_dir, seconds_per_product, show_name)
+            )
         except Exception as e:
             print(f"[경고] 상품을 건너뜁니다: {product.get('short_name', '')[:30]} ({e})")
 
@@ -259,11 +410,29 @@ def build(products: list, output: str, narration: str, music: str, font: str,
     video = concatenate_videoclips(faded, method="compose", padding=-CROSSFADE)
     duration = video.duration
 
+    # 장면이 바뀌는 시각을 기억해뒀다가 효과음을 얹습니다
+    switch_times = []
+    elapsed = 0.0
+    for segment in segments[:-1]:
+        elapsed += segment.duration - CROSSFADE
+        if 0 < elapsed < duration:
+            switch_times.append(elapsed)
+
     tracks = []
     if narration and os.path.exists(narration):
         voice = AudioFileClip(narration)
         tracks.append(voice)
         print(f"나레이션: {os.path.basename(narration)} ({voice.duration:.1f}초)")
+
+    if use_sfx and switch_times:
+        try:
+            sfx_path = find_sfx()
+            for moment in switch_times:
+                hit = AudioFileClip(sfx_path).with_effects([afx.MultiplyVolume(0.35)])
+                tracks.append(hit.with_start(max(moment - 0.12, 0)))
+            print(f"전환 효과음 {len(switch_times)}번 ({os.path.basename(sfx_path)})")
+        except Exception as e:
+            print(f"[경고] 효과음을 넣지 못했습니다: {e}")
 
     music_path = find_music(music)
     if music_path:
@@ -282,6 +451,18 @@ def build(products: list, output: str, narration: str, music: str, font: str,
     if tracks:
         video = video.with_audio(CompositeAudioClip(tracks) if len(tracks) > 1 else tracks[0])
 
+    # 말에 맞춰 톡톡 튀는 자막
+    layers = [video]
+    if words:
+        caption_clips = pop_caption_clips(words, font, duration)
+        if caption_clips:
+            layers.extend(caption_clips)
+            print(f"말에 맞춘 자막 {len(caption_clips)}묶음")
+    elif pop_captions:
+        print("단어 타이밍이 없어 상품 이름을 대신 표시합니다 (나레이션을 만들면 자막이 붙습니다).")
+
+    final = CompositeVideoClip(layers, size=SHORTS_SIZE) if len(layers) > 1 else video
+
     out_dir = os.path.dirname(output)
     if out_dir:
         os.makedirs(out_dir, exist_ok=True)
@@ -289,12 +470,12 @@ def build(products: list, output: str, narration: str, music: str, font: str,
     print(f"렌더링 중 ({duration:.1f}초, {SHORTS_SIZE[0]}x{SHORTS_SIZE[1]})... → {output}")
     temp_audio = os.path.splitext(output)[0] + ".temp-audio.m4a"
     try:
-        video.write_videofile(
+        final.write_videofile(
             output, fps=30, codec="libx264", audio_codec="aac", threads=4,
             temp_audiofile=temp_audio, remove_temp=True,
         )
     finally:
-        video.close()
+        final.close()
 
     return duration
 
@@ -310,6 +491,8 @@ def main():
     parser.add_argument("--font", default=None)
     parser.add_argument("--seconds-per-product", type=float, default=SECONDS_PER_PRODUCT)
     parser.add_argument("--cache-dir", default=os.path.join(PROJECT_ROOT, "assets", "product_images"))
+    parser.add_argument("--no-sfx", action="store_true", help="장면 전환 효과음 끄기")
+    parser.add_argument("--no-pop-captions", action="store_true", help="말에 맞춘 자막 끄기")
     args = parser.parse_args()
 
     with open(args.products, "r", encoding="utf-8") as f:
@@ -328,7 +511,8 @@ def main():
         print(f"  {p['price']:>8,}원  {p['short_name'][:40]}")
 
     build(products, args.output, args.narration, args.music, font,
-          args.seconds_per_product, args.cache_dir)
+          args.seconds_per_product, args.cache_dir,
+          use_sfx=not args.no_sfx, pop_captions=not args.no_pop_captions)
     print(f"완료: {args.output}")
 
 

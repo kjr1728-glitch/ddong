@@ -7,6 +7,9 @@ token.json
 output/
 assets/broll/
 assets/product_images/
+assets/sfx/*
+!assets/sfx/README.md
+!assets/sfx/.gitkeep
 assets/my_products/*
 !assets/my_products/.gitkeep
 assets/music/*

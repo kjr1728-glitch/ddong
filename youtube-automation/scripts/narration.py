@@ -12,6 +12,7 @@ edge-tts가 단어 단위로 알려주는 WordBoundary 정보를 모아 문장�
 """
 import argparse
 import asyncio
+import json
 import os
 import re
 
@@ -188,6 +189,17 @@ def main():
     srt_path = args.srt or os.path.splitext(args.output)[0] + ".srt"
     captions = split_into_captions(clean_text)
     cues = align_captions(captions, boundaries)
+
+    # 단어별 시각을 따로 남깁니다. 쇼츠에서 말에 맞춰 한 단어씩 띄우는 자막에 씁니다.
+    words_path = os.path.splitext(args.output)[0] + ".words.json"
+    if boundaries:
+        with open(words_path, "w", encoding="utf-8") as f:
+            json.dump(
+                [{"start": round(s, 3), "end": round(e, 3), "text": t}
+                 for s, e, t in boundaries],
+                f, ensure_ascii=False, indent=1,
+            )
+        print(f"단어 타이밍: {words_path} ({len(boundaries)}개)")
 
     if cues:
         write_srt(cues, srt_path)
