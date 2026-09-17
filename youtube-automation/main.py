@@ -46,7 +46,10 @@ def main():
     parser.add_argument("--region", default="KR")
     parser.add_argument("--voice", default="ko-KR-SunHiNeural")
     parser.add_argument("--minutes", type=int, default=5, help="목표 영상 길이(분)")
-    parser.add_argument("--broll-count", type=int, default=4, help="키워드당 b-roll 개수")
+    parser.add_argument(
+        "--broll-count", type=int, default=6,
+        help="키워드당 b-roll 개수. 많을수록 같은 장면 반복이 줄어듭니다",
+    )
     parser.add_argument(
         "--broll-keywords",
         default=None,
@@ -80,6 +83,12 @@ def main():
     )
     parser.add_argument("--title", default=None, help="업로드 제목 (생략 시 스크립트에서 생성)")
     parser.add_argument("--tags", default=None, help="쉼표로 구분된 업로드 태그")
+    parser.add_argument(
+        "--cut-seconds", type=float, default=None,
+        help="한 컷의 길이(초). 짧을수록 빠른 느낌 (기본 4초)",
+    )
+    parser.add_argument("--no-zoom", action="store_true", help="느린 확대 끄기 (렌더링이 빨라짐)")
+    parser.add_argument("--no-music", action="store_true", help="배경음악 넣지 않기")
     args = parser.parse_args()
 
     today = datetime.date.today().isoformat()
@@ -169,17 +178,22 @@ def main():
     run(broll_cmd)
 
     # 5단계: 영상 합성
-    run(
-        [
-            sys.executable,
-            script_path("video_synthesis.py"),
-            "--narration", narration_file,
-            "--broll-dir", broll_dir,
-            "--script", script_file,
-            "--srt", srt_file,
-            "--output", video_file,
-        ]
-    )
+    synth_cmd = [
+        sys.executable,
+        script_path("video_synthesis.py"),
+        "--narration", narration_file,
+        "--broll-dir", broll_dir,
+        "--script", script_file,
+        "--srt", srt_file,
+        "--output", video_file,
+    ]
+    if args.cut_seconds:
+        synth_cmd += ["--cut-seconds", str(args.cut_seconds)]
+    if args.no_zoom:
+        synth_cmd.append("--no-zoom")
+    if args.no_music:
+        synth_cmd.append("--no-music")
+    run(synth_cmd)
 
     print(f"\n영상 완성: {video_file}")
 
