@@ -7,6 +7,28 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
+# .env 파일 (git 에 올라가지 않음) — 셸 세션이 바뀌어도 키가 유지되도록.
+# 환경변수가 이미 설정돼 있으면 그쪽이 우선한다.
+ENV_FILE = PROJECT_ROOT / ".env"
+
+
+def _load_env_file() -> None:
+    if not ENV_FILE.exists():
+        return
+    for raw in ENV_FILE.read_text().splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        # 환경변수를 덮어쓰지 않는다 — 환경 설정이 항상 우선.
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+_load_env_file()
+
 # 입력 ---------------------------------------------------------------------
 # 상업용 최종본에 넣어도 되는, 사용 권한이 확인된 내 영상만 여기에 둔다.
 SOURCES_DIR = PROJECT_ROOT / "sources"
