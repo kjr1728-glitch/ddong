@@ -1,0 +1,390 @@
+{
+  "generated_at": "2026-09-17T18:12:44+00:00",
+  "fps": 30,
+  "width": 1080,
+  "height": 1920,
+  "duration_f": 714,
+  "duration_s": 23.8,
+  "effective_duration_f": 654,
+  "effective_duration_s": 21.8,
+  "audio": {
+    "file": "narration.mp3",
+    "duration_s": 21.629
+  },
+  "clips": [
+    {
+      "beat": "b1",
+      "role": "hook",
+      "kind": "video",
+      "source_id": "source01",
+      "scene_id": "source01_s01",
+      "file": "greeting.mp4",
+      "src_start_s": 0.0,
+      "src_end_s": 2.5,
+      "from_f": 0,
+      "duration_f": 75,
+      "trim_before_f": 0,
+      "focus": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "crop_loss": 0.6836,
+      "offset_percent": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "zoom": {
+        "from": 1.0,
+        "to": 1.08
+      },
+      "source_has_audio": true,
+      "text": "요즘 이상하게 일이 안 풀린다면"
+    },
+    {
+      "beat": "b1",
+      "role": "hook",
+      "kind": "video",
+      "source_id": "source02",
+      "scene_id": "source02_s04",
+      "file": "invite.mp4",
+      "src_start_s": 7.5,
+      "src_end_s": 8.803,
+      "from_f": 75,
+      "duration_f": 39,
+      "trim_before_f": 225,
+      "focus": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "crop_loss": 0.0,
+      "offset_percent": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "zoom": {
+        "from": 1.0,
+        "to": 1.08
+      },
+      "source_has_audio": true,
+      "text": ""
+    },
+    {
+      "beat": "b2",
+      "role": "problem",
+      "kind": "video",
+      "source_id": "source01",
+      "scene_id": "source01_s02",
+      "file": "greeting.mp4",
+      "src_start_s": 2.5,
+      "src_end_s": 5.0,
+      "from_f": 114,
+      "duration_f": 75,
+      "trim_before_f": 75,
+      "focus": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "crop_loss": 0.6836,
+      "offset_percent": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "zoom": {
+        "from": 1.0,
+        "to": 1.08
+      },
+      "source_has_audio": true,
+      "text": "그건 운이 아니라 흐름의 문제일 수 있어요"
+    },
+    {
+      "beat": "b2",
+      "role": "problem",
+      "kind": "video",
+      "source_id": "source02",
+      "scene_id": "source02_s01",
+      "file": "invite.mp4",
+      "src_start_s": 0.0,
+      "src_end_s": 2.5,
+      "from_f": 189,
+      "duration_f": 75,
+      "trim_before_f": 0,
+      "focus": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "crop_loss": 0.0,
+      "offset_percent": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "zoom": {
+        "from": 1.0,
+        "to": 1.08
+      },
+      "source_has_audio": true,
+      "text": ""
+    },
+    {
+      "beat": "b3",
+      "role": "product",
+      "kind": "video",
+      "source_id": "source02",
+      "scene_id": "source02_s02",
+      "file": "invite.mp4",
+      "src_start_s": 2.5,
+      "src_end_s": 5.0,
+      "from_f": 264,
+      "duration_f": 75,
+      "trim_before_f": 75,
+      "focus": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "crop_loss": 0.0,
+      "offset_percent": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "zoom": {
+        "from": 1.0,
+        "to": 1.08
+      },
+      "source_has_audio": true,
+      "text": "연화가 사주로 그 흐름을 읽어드립니다"
+    },
+    {
+      "beat": "b3",
+      "role": "product",
+      "kind": "video",
+      "source_id": "source02",
+      "scene_id": "source02_s03",
+      "file": "invite.mp4",
+      "src_start_s": 5.0,
+      "src_end_s": 6.975,
+      "from_f": 339,
+      "duration_f": 59,
+      "trim_before_f": 150,
+      "focus": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "crop_loss": 0.0,
+      "offset_percent": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "zoom": {
+        "from": 1.0,
+        "to": 1.08
+      },
+      "source_has_audio": true,
+      "text": ""
+    },
+    {
+      "beat": "b4",
+      "role": "usage",
+      "kind": "video",
+      "source_id": "source01",
+      "scene_id": "source01_s03",
+      "file": "greeting.mp4",
+      "src_start_s": 5.0,
+      "src_end_s": 7.5,
+      "from_f": 398,
+      "duration_f": 75,
+      "trim_before_f": 150,
+      "focus": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "crop_loss": 0.6836,
+      "offset_percent": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "zoom": {
+        "from": 1.0,
+        "to": 1.08
+      },
+      "source_has_audio": true,
+      "text": "생년월일만 넣으면 삼 분 만에"
+    },
+    {
+      "beat": "b4",
+      "role": "usage",
+      "kind": "video",
+      "source_id": "source02",
+      "scene_id": "source02_s01",
+      "file": "invite.mp4",
+      "src_start_s": 0.0,
+      "src_end_s": 1.08,
+      "from_f": 473,
+      "duration_f": 32,
+      "trim_before_f": 0,
+      "focus": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "crop_loss": 0.0,
+      "offset_percent": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "zoom": {
+        "from": 1.0,
+        "to": 1.08
+      },
+      "source_has_audio": true,
+      "text": ""
+    },
+    {
+      "beat": "b5",
+      "role": "result",
+      "kind": "video",
+      "source_id": "source02",
+      "scene_id": "source02_s03",
+      "file": "invite.mp4",
+      "src_start_s": 5.0,
+      "src_end_s": 7.5,
+      "from_f": 505,
+      "duration_f": 75,
+      "trim_before_f": 150,
+      "focus": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "crop_loss": 0.0,
+      "offset_percent": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "zoom": {
+        "from": 1.0,
+        "to": 1.08
+      },
+      "source_has_audio": true,
+      "text": "올해 내 재물운과 시기를 알려드려요"
+    },
+    {
+      "beat": "b5",
+      "role": "result",
+      "kind": "video",
+      "source_id": "source02",
+      "scene_id": "source02_s04",
+      "file": "invite.mp4",
+      "src_start_s": 7.5,
+      "src_end_s": 9.067,
+      "from_f": 580,
+      "duration_f": 47,
+      "trim_before_f": 225,
+      "focus": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "crop_loss": 0.0,
+      "offset_percent": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "zoom": {
+        "from": 1.0,
+        "to": 1.08
+      },
+      "source_has_audio": true,
+      "text": ""
+    },
+    {
+      "beat": "b6",
+      "role": "cta",
+      "kind": "video",
+      "source_id": "source02",
+      "scene_id": "source02_s02",
+      "file": "invite.mp4",
+      "src_start_s": 2.5,
+      "src_end_s": 5.0,
+      "from_f": 627,
+      "duration_f": 75,
+      "trim_before_f": 75,
+      "focus": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "crop_loss": 0.0,
+      "offset_percent": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "zoom": {
+        "from": 1.0,
+        "to": 1.08
+      },
+      "source_has_audio": true,
+      "text": "지금 무료로 확인해보세요"
+    },
+    {
+      "beat": "b6",
+      "role": "cta",
+      "kind": "video",
+      "source_id": "source02",
+      "scene_id": "source02_s04",
+      "file": "invite.mp4",
+      "src_start_s": 7.5,
+      "src_end_s": 7.908,
+      "from_f": 702,
+      "duration_f": 12,
+      "trim_before_f": 225,
+      "focus": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "crop_loss": 0.0,
+      "offset_percent": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "zoom": {
+        "from": 1.0,
+        "to": 1.08
+      },
+      "source_has_audio": true,
+      "text": ""
+    }
+  ],
+  "captions": [
+    {
+      "text": "요즘 이상하게 일이 안 풀린다면",
+      "startMs": 0,
+      "endMs": 2500
+    },
+    {
+      "text": "그건 운이 아니라 흐름의 문제일 수 있어요",
+      "startMs": 3800,
+      "endMs": 6300
+    },
+    {
+      "text": "연화가 사주로 그 흐름을 읽어드립니다",
+      "startMs": 8800,
+      "endMs": 11300
+    },
+    {
+      "text": "생년월일만 넣으면 삼 분 만에",
+      "startMs": 13266,
+      "endMs": 15766
+    },
+    {
+      "text": "올해 내 재물운과 시기를 알려드려요",
+      "startMs": 16833,
+      "endMs": 19333
+    },
+    {
+      "text": "지금 무료로 확인해보세요",
+      "startMs": 20900,
+      "endMs": 23400
+    }
+  ],
+  "cta": "지금 무료로 사주 보기",
+  "stats": {
+    "real_video_ratio": 1.0,
+    "required_ratio": 0.7,
+    "distinct_scenes_used": 7
+  }
+}

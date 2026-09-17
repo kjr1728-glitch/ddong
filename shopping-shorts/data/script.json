@@ -1,0 +1,20 @@
+{
+  "title": "연화의 사주 — 샘플 대본 (파이프라인 검증용)",
+  "note": "실제 제품이 정해지면 beats 의 text/want 만 바꾸면 됩니다.",
+  "target_duration_s": 18,
+  "beats": [
+    { "id": "b1", "role": "hook",   "duration_s": 2.6, "want": ["hook", "손", "도입"],
+      "text": "요즘 이상하게 일이 안 풀린다면" },
+    { "id": "b2", "role": "problem","duration_s": 2.6, "want": ["인물", "등장"],
+      "text": "그건 운이 아니라 흐름의 문제일 수 있어요" },
+    { "id": "b3", "role": "product","duration_s": 2.6, "want": ["제품", "클로즈업"],
+      "text": "연화가 사주로 그 흐름을 읽어드립니다" },
+    { "id": "b4", "role": "usage",  "duration_s": 2.6, "want": ["사용장면", "인물"],
+      "text": "생년월일만 넣으면 삼 분 만에" },
+    { "id": "b5", "role": "result", "duration_s": 2.6, "want": ["결과", "제품"],
+      "text": "올해 내 재물운과 시기를 알려드려요" },
+    { "id": "b6", "role": "cta",    "duration_s": 2.6, "want": ["cta", "제품"],
+      "text": "지금 무료로 확인해보세요" }
+  ],
+  "cta": "지금 무료로 사주 보기"
+}

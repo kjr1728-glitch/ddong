@@ -1,0 +1,130 @@
+{
+  "generated_at": "2026-09-17T17:42:29+00:00",
+  "sources": [
+    {
+      "id": "source01",
+      "file": "greeting.mp4",
+      "path": "sources/greeting.mp4",
+      "rights": "owned",
+      "scene_cuts_detected": 0,
+      "segmented_by": "fixed-interval",
+      "duration": 8.2,
+      "width": 1920,
+      "height": 1080,
+      "fps": 30.0,
+      "has_audio": true,
+      "orientation": "landscape",
+      "size_bytes": 1553614,
+      "scenes": [
+        {
+          "id": "source01_s01",
+          "start": 0.0,
+          "end": 2.5,
+          "duration": 2.5,
+          "label": "문 열리는 손",
+          "tags": [
+            "도입",
+            "hook",
+            "손"
+          ],
+          "thumb": "data/thumbs/source01_s01.jpg"
+        },
+        {
+          "id": "source01_s02",
+          "start": 2.5,
+          "end": 5.0,
+          "duration": 2.5,
+          "label": "연화 등장 정면",
+          "tags": [
+            "인물",
+            "등장",
+            "정면"
+          ],
+          "thumb": "data/thumbs/source01_s02.jpg"
+        },
+        {
+          "id": "source01_s03",
+          "start": 5.0,
+          "end": 7.5,
+          "duration": 2.5,
+          "label": "책상 앞 연화",
+          "tags": [
+            "인물",
+            "사용장면"
+          ],
+          "thumb": "data/thumbs/source01_s03.jpg"
+        }
+      ]
+    },
+    {
+      "id": "source02",
+      "file": "invite.mp4",
+      "path": "sources/invite.mp4",
+      "rights": "owned",
+      "scene_cuts_detected": 0,
+      "segmented_by": "fixed-interval",
+      "duration": 9.066667,
+      "width": 1080,
+      "height": 1920,
+      "fps": 30.0,
+      "has_audio": true,
+      "orientation": "portrait",
+      "size_bytes": 3422302,
+      "scenes": [
+        {
+          "id": "source02_s01",
+          "start": 0.0,
+          "end": 2.5,
+          "duration": 2.5,
+          "label": "연화 클로즈업",
+          "tags": [
+            "인물",
+            "클로즈업"
+          ],
+          "thumb": "data/thumbs/source02_s01.jpg"
+        },
+        {
+          "id": "source02_s02",
+          "start": 2.5,
+          "end": 5.0,
+          "duration": 2.5,
+          "label": "사주 책 발광",
+          "tags": [
+            "제품",
+            "클로즈업",
+            "강조"
+          ],
+          "thumb": "data/thumbs/source02_s02.jpg"
+        },
+        {
+          "id": "source02_s03",
+          "start": 5.0,
+          "end": 7.5,
+          "duration": 2.5,
+          "label": "책 정면 클로즈업",
+          "tags": [
+            "제품",
+            "클로즈업",
+            "결과"
+          ],
+          "thumb": "data/thumbs/source02_s03.jpg"
+        },
+        {
+          "id": "source02_s04",
+          "start": 7.5,
+          "end": 9.067,
+          "duration": 1.567,
+          "label": "책 마무리 샷",
+          "tags": [
+            "제품",
+            "결과",
+            "cta"
+          ],
+          "thumb": "data/thumbs/source02_s04.jpg"
+        }
+      ]
+    }
+  ],
+  "references": [],
+  "note": "rights=reference-only 인 항목은 분석 전용이며 최종 EDL 에 넣을 수 없다."
+}
