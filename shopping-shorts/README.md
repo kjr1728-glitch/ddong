@@ -80,12 +80,29 @@ ffmpeg 는 시스템에 있으면 그걸 쓰고, 없으면 `imageio-ffmpeg` 가 
 누끼 사진이면 더 좋습니다.
 
 ### 2. 샷리스트 만들기 (프롬프트 + 나레이션)
+
+사진만으로는 제품 사용법을 알 수 없으니, 이 단계에서 제품 정보를 넣어 줍니다.
+제일 쉬운 방법은 **제품 페이지 주소를 Claude Code 에 그대로 주는 것**입니다.
+```
+이 제품 페이지 보고 shopping-shorts/shotlist.json 만들어줘: https://제품주소
+제품 사진도 페이지에서 받아서 shopping-shorts/assets/product.png 로 저장해줘.
+형식은 shopping-shorts/shotlist.example.json 참고, 손만 나오는 형식으로 5컷.
+```
+Claude Code 가 페이지를 읽고 사진까지 받아 주므로 1번 단계도 같이 끝납니다.
+
+스크립트로 하려면:
 ```bash
+# 제품 페이지에서 본문과 대표 이미지를 자동으로 가져와 요청문을 만듭니다
+python scripts/write_shotlist.py --url https://쇼핑몰/제품페이지 --shots 5 --style hand
+
+# 또는 직접 적기 (사용 순서까지 적을수록 동작이 정확해집니다)
 python scripts/write_shotlist.py --product "무선 전동 청소솔" \
-    --features "버튼 하나로 작동,헤드 3종 교체,완전 방수" --shots 5 --style hand
+    --features "손잡이 버튼을 2초 누르면 켜짐,헤드가 회전하며 타일을 닦음,헤드는 돌려서 분리 교체" --shots 5
 ```
 출력되는 요청문을 **Claude Code 에 붙여넣고** 받은 JSON 을 `shotlist.json` 으로 저장합니다.
 (무인 자동화가 필요하면 `--auto` 를 붙이면 Anthropic API 가 바로 만듭니다. 종량 과금)
+쿠팡·스마트스토어처럼 봇을 막거나 자바스크립트로 그리는 페이지는 `--url` 로 못 읽을 수 있습니다.
+그때는 위처럼 Claude Code 에 주소를 직접 주세요.
 
 형식은 `shotlist.example.json` 을 보면 됩니다. 손으로 고쳐도 됩니다.
 - `type`: `hand`(손이 나옴) / `product`(제품만) / `face`(얼굴, 참조 사진 필요)

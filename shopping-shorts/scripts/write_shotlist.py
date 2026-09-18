@@ -8,11 +8,18 @@
 사용법:
     python write_shotlist.py --product "무선 전동 청소솔" --features "버튼 하나로 작동,헤드 3종,방수" \
         --image assets/product.png --output shotlist.json
+    python write_shotlist.py --url https://쇼핑몰/제품페이지     # 페이지 글 + 대표 이미지 자동 수집
     python write_shotlist.py ... --auto          # API로 자동 생성
+
+--url 은 페이지의 본문 텍스트와 대표 이미지(og:image)를 가져와 요청문에 넣습니다.
+쿠팡·스마트스토어처럼 봇을 막거나 자바스크립트로 그리는 페이지는 못 읽을 수 있는데,
+그럴 땐 URL 을 Claude Code 에 직접 주고 shotlist.json 을 만들어 달라고 하면 됩니다.
 """
 import argparse
+import html
 import json
 import os
+import re
 import sys
 
 from dotenv import load_dotenv
@@ -22,13 +29,83 @@ load_dotenv(os.path.join(_HERE, "..", ".env"))
 
 MODEL = "claude-opus-5"
 
+MAX_PAGE_CHARS = 6000
+BROWSER_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36",
+    "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
+}
+
+
+def fetch_product_page(url: str) -> dict:
+    """제품 페이지에서 제목, 본문 텍스트, 대표 이미지 URL 을 뽑는다 (외부 파서 없이)"""
+    import requests
+
+    r = requests.get(url, headers=BROWSER_HEADERS, timeout=30)
+    r.raise_for_status()
+    # 서버가 charset 을 안 알려주면 requests 가 latin-1 로 읽어 한글이 깨집니다.
+    if "charset" not in r.headers.get("Content-Type", "").lower():
+        m = re.search(rb'charset=["\']?([\w-]+)', r.content[:4096], re.I)
+        r.encoding = m.group(1).decode("ascii", "ignore") if m else "utf-8"
+    page = r.text
+
+    def meta(prop):
+        m = re.search(r'<meta[^>]+(?:property|name)=["\']' + prop + r'["\'][^>]+content=["\']([^"\']+)', page, re.I)
+        if not m:
+            m = re.search(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+(?:property|name)=["\']' + prop + r'["\']', page, re.I)
+        return html.unescape(m.group(1)).strip() if m else ""
+
+    title = meta("og:title") or ""
+    if not title:
+        m = re.search(r"<title[^>]*>(.*?)</title>", page, re.I | re.S)
+        title = html.unescape(m.group(1)).strip() if m else ""
+    description = meta("og:description") or meta("description")
+    image = meta("og:image")
+
+    body = re.sub(r"<(script|style|noscript|svg|header|footer|nav)[^>]*>.*?</\1>", " ", page, flags=re.I | re.S)
+    body = re.sub(r"<br\s*/?>|</p>|</div>|</li>|</h\d>|</tr>", "\n", body, flags=re.I)
+    body = re.sub(r"<[^>]+>", " ", body)
+    body = html.unescape(body)
+    lines = [re.sub(r"[ \t\u00a0]+", " ", ln).strip() for ln in body.splitlines()]
+    lines = [ln for ln in lines if len(ln) >= 4]
+    text = "\n".join(dict.fromkeys(lines))  # 중복 줄 제거, 순서 유지
+    if len(text) > MAX_PAGE_CHARS:
+        text = text[:MAX_PAGE_CHARS] + "\n...(이하 생략)"
+    return {"url": url, "title": title, "description": description, "image": image, "text": text}
+
+
+def download_image(url: str, dest: str) -> str:
+    import requests
+
+    r = requests.get(url, headers=BROWSER_HEADERS, timeout=30)
+    r.raise_for_status()
+    ctype = r.headers.get("Content-Type", "")
+    ext = ".jpg" if "jpeg" in ctype or "jpg" in ctype else ".png" if "png" in ctype else ".webp" if "webp" in ctype else os.path.splitext(dest)[1] or ".jpg"
+    dest = os.path.splitext(dest)[0] + ext
+    os.makedirs(os.path.dirname(dest) or ".", exist_ok=True)
+    with open(dest, "wb") as f:
+        f.write(r.content)
+    return dest
+
 SYSTEM_PROMPT = """당신은 쇼핑 쇼츠(세로 15~30초 제품 리뷰 영상) 전문 연출가입니다.
 AI 영상 모델(Wan 2.2 image-to-video)이 제품 사진 한 장에서 5초짜리 클립을 만들 수 있도록
 샷별 영어 모션 프롬프트와 한국어 나레이션을 JSON으로 작성합니다."""
 
 
-def build_request(product: str, features: list, image: str, shots: int, style: str, tagline: str) -> str:
+def build_request(product: str, features: list, image: str, shots: int, style: str, tagline: str,
+                  page: dict = None) -> str:
     feat = "\n".join(f"- {f}" for f in features) or "- (특징 미입력)"
+    page_block = ""
+    if page:
+        page_block = f"""
+[제품 페이지에서 가져온 정보] {page['url']}
+제목: {page.get('title') or '(없음)'}
+요약: {page.get('description') or '(없음)'}
+본문:
+{page.get('text') or '(본문을 읽지 못함)'}
+
+위 페이지 정보에서 실제 사용 방법(버튼 위치, 켜는 법, 교체 방법 등)을 찾아
+샷의 동작 프롬프트와 나레이션에 정확히 반영할 것. 페이지에 없는 기능은 지어내지 말 것.
+"""
     style_note = {
         "hand": "얼굴 없이 실제 사람 손만 나오는 UGC 리뷰 형식. type 은 'hand' 와 'product' 만 사용.",
         "face": "리뷰어 얼굴이 나오는 UGC 형식. 첫 샷과 마지막 샷은 type 'face', 나머지는 'hand'/'product'. "
@@ -62,7 +139,7 @@ JSON 형식:
 3. 텍스트, 로고, 자막을 그리라는 말은 넣지 말 것 (AI가 글자를 망가뜨림).
 4. 나레이션은 구어체, 샷당 12~25자, 첫 샷은 후킹 질문, 마지막 샷은 행동 유도.
 5. 나레이션에 괄호나 지시문을 넣지 말 것 (그대로 음성으로 읽힘).
-"""
+{page_block}"""
 
 
 def generate_with_api(request: str) -> dict:
@@ -98,7 +175,8 @@ def generate_with_api(request: str) -> dict:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--product", required=True)
+    parser.add_argument("--product", default=None, help="제품명 (--url 이 있으면 페이지 제목으로 대체 가능)")
+    parser.add_argument("--url", default=None, help="제품 페이지 주소. 본문과 대표 이미지를 자동으로 가져옵니다")
     parser.add_argument("--features", default="", help="쉼표로 구분")
     parser.add_argument("--tagline", default="")
     parser.add_argument("--image", default="assets/product.png")
@@ -109,7 +187,33 @@ def main():
     args = parser.parse_args()
 
     features = [f.strip() for f in args.features.split(",") if f.strip()]
-    request = build_request(args.product, features, args.image, args.shots, args.style, args.tagline)
+
+    page = None
+    if args.url:
+        try:
+            page = fetch_product_page(args.url)
+        except Exception as e:
+            raise SystemExit(
+                f"페이지를 읽지 못했습니다 ({e}).\n"
+                "이 사이트는 봇 접근을 막거나 자바스크립트로 내용을 그리는 것 같습니다.\n"
+                "→ URL 을 Claude Code 에 직접 주고 shotlist.json 을 만들어 달라고 하세요."
+            )
+        print(f"페이지 읽음: {page['title'] or args.url} (본문 {len(page['text'])}자)")
+        if not args.product:
+            args.product = page["title"] or args.url
+        if page["image"]:
+            try:
+                saved = download_image(page["image"], args.image)
+                args.image = os.path.relpath(saved, os.path.dirname(os.path.abspath(args.output)) or ".").replace("\\", "/")
+                print(f"대표 이미지 저장: {saved}  (다른 사진이 더 낫다면 이 파일을 바꿔치기 하세요)")
+            except Exception as e:
+                print(f"[경고] 대표 이미지를 받지 못했습니다: {e} — assets/product.png 에 직접 넣어주세요")
+        if not page["text"]:
+            print("[경고] 본문을 거의 읽지 못했습니다. --features 로 사용법을 직접 적어주세요.")
+    if not args.product:
+        raise SystemExit("--product 또는 --url 중 하나는 필요합니다.")
+
+    request = build_request(args.product, features, args.image, args.shots, args.style, args.tagline, page)
 
     if not args.auto:
         print("아래 내용을 Claude Code 에 그대로 붙여넣고, 답으로 받은 JSON 을")
