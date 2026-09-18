@@ -1,0 +1,9 @@
+requests==2.*
+python-dotenv==1.*
+edge-tts==6.*
+Pillow>=9.5
+# ffmpeg 가 시스템에 없을 때 내장 바이너리를 대신 씁니다 (자막 태우기 지원)
+imageio-ffmpeg>=0.5
+
+# 선택사항 — scripts/write_shotlist.py --auto 로 샷리스트까지 API로 만들 때만 필요
+anthropic>=1.0

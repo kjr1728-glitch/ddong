@@ -1,0 +1,7 @@
+.env
+output/
+assets/*
+!assets/.gitkeep
+shotlist.json
+__pycache__/
+*.pyc

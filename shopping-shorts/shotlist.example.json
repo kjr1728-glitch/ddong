@@ -1,0 +1,50 @@
+{
+  "product": {
+    "name": "무선 전동 청소솔",
+    "tagline": "욕실 바닥 3분 컷",
+    "image": "assets/product.png"
+  },
+  "video": {
+    "workflow": "wan22_5b_i2v",
+    "width": 704,
+    "height": 1280,
+    "length": 121,
+    "fps": 24,
+    "steps": 20,
+    "seed": 12345
+  },
+  "voice": "ko-KR-SunHiNeural",
+  "style": "hand",
+  "shots": [
+    {
+      "id": "01",
+      "type": "hand",
+      "prompt": "A woman's hand reaches into frame and picks up the product, turning it slowly to show it to the camera. Bright bathroom, soft daylight, handheld phone footage, shallow depth of field.",
+      "narration": "욕실 청소, 아직 손으로 하세요?"
+    },
+    {
+      "id": "02",
+      "type": "hand",
+      "prompt": "Close-up of a thumb pressing the power button on the handle; the brush head starts spinning. Realistic handheld product review footage.",
+      "narration": "버튼 하나 누르면 솔이 알아서 돌아가요."
+    },
+    {
+      "id": "03",
+      "type": "product",
+      "prompt": "The spinning brush head scrubs wet grey bathroom tiles, foam spreading in a circle, water droplets flying. Camera slowly pushes in from above.",
+      "narration": "타일 사이 물때가 이렇게 벗겨집니다."
+    },
+    {
+      "id": "04",
+      "type": "hand",
+      "prompt": "A hand swaps the brush head for a different attachment with a click, then holds it up to the camera. Handheld, natural light.",
+      "narration": "헤드는 세 종류, 용도별로 갈아 끼우면 끝."
+    },
+    {
+      "id": "05",
+      "type": "product",
+      "prompt": "The product rests against a clean white tiled wall, camera slowly orbits around it, soft daylight, minimal clean composition.",
+      "narration": "링크는 프로필에 있어요."
+    }
+  ]
+}
