@@ -16,7 +16,8 @@
    ```
 4. **폰트** `fonts/GmarketSansTTFBold.ttf` — 저장소에 포함돼 있음. 렌더는 이 파일을 직접 읽으므로 Windows에 설치할 필요 없음.
 5. **이미지 생성 도구** — 그래픽카드가 있으면 ComfyUI(무료), 없으면 Gemini 앱(무료, 수동). 결정되면 Claude Code에 그래픽카드 모델명을 알려주면 설치 스크립트를 만들어 준다.
-6. **목소리** — ElevenLabs에서 고른 보이스 ID를 `voice.json`에 적는다 (아래 참고).
+6. **목소리** — `voice.json`에 확정 보이스(Jennie - Narrational)가 적혀 있음. 바꾸려면 voice_id만 수정.
+7. **PC 점검** — `python tools/check_pc.py` 결과를 Claude Code에 붙여넣으면 ComfyUI 상태에 맞춰 다음 단계를 잡아 준다.
 
 ## 폴더 구조 (작품 하나 = 폴더 하나)
 

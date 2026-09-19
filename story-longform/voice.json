@@ -1,0 +1,16 @@
+{
+  "provider": "elevenlabs",
+  "voice_name": "Jennie - Narrational",
+  "voice_id": "z6Kj0hecH20CdetSElRT",
+  "model_id": "eleven_multilingual_v2",
+  "stability": 0.5,
+  "similarity_boost": 0.75,
+  "style": 0.0,
+  "speed": 1.0,
+  "pitch_shift": false,
+  "_note": "ElevenLabs에 'Jennie'라는 이름의 한국어 보이스가 둘 있음. 이 ID는 라벨이 Use=Narrative인 쪽. 사용자가 뜻한 것이 아래 후보라면 voice_id만 바꾼다.",
+  "_alternative": {
+    "voice_name": "Jennie - Calm & Soft (중년, 차분)",
+    "voice_id": "cOEUzzSDV65wtWpjhzHF"
+  }
+}
