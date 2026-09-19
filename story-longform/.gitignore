@@ -1,0 +1,8 @@
+works/**/*.mp4
+works/**/*.wav
+works/**/*.mp3
+works/**/*.png
+works/**/*.jpg
+works/**/*.scenes.txt
+works/**/*.list.txt
+__pycache__/
