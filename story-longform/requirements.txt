@@ -1,3 +1,7 @@
 faster-whisper>=1.0
 requests>=2.31
 edge-tts>=7.0
+sherpa-onnx>=1.10
+numpy
+pillow
+opencv-contrib-python

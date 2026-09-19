@@ -47,7 +47,7 @@ story-longform/
 
 **1~2. 이야기 설계와 6파트 대본**
 > 60분 분량 전체 이야기를 설계하고 `story.md`에 저장해. 등장인물은 5명 이내, 2인 이상 장면은 꼭 필요한 곳만.
-> 승인하면 파트 1부터 6까지 대본을 `parts/pN/script.txt`로 써. 한 파트 약 10분(한국어 약 1,800~2,100자).
+> 승인하면 파트 1부터 6까지 대본을 `parts/pN/script.txt`로 써. 한 파트 약 10분(Jennie 기준 약 4,200자, 실측 423자/분).
 
 **3. 인물 기준 얼굴**
 > 주요 인물마다 기준 얼굴 프롬프트를 `characters/`에 만들어. (ComfyUI면 여기서 자동 생성, Gemini면 프롬프트를 복사해서 직접 생성 후 저장)
@@ -58,7 +58,11 @@ story-longform/
 
 **6. 내레이션**
 > `voice.json`의 보이스로 파트 1 대본을 TTS로 만들어 `narration.wav`와 `words.json`을 저장해.
-> (ElevenLabs API의 with-timestamps 응답을 words.json으로 변환. 타임스탬프가 없는 음성이면 `python tools/align_whisper.py`로 대본과 정렬)
+```
+python tools/tts_elevenlabs.py --script parts/p1/script.txt --out parts/p1
+python tools/make_scenes.py --script parts/p1/script.txt --words parts/p1/words.json --audio parts/p1/narration.wav --out parts/p1/scenes.json
+```
+(타임스탬프 없는 음성이면 `tools/align_sherpa.py`로 대본과 정렬)
 
 **7. 자막**
 ```

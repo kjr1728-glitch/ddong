@@ -1,0 +1,102 @@
+[
+ {
+  "image": "scenes/001.png",
+  "start": 0.0,
+  "end": 27.636
+ },
+ {
+  "image": "scenes/002.png",
+  "start": 27.636,
+  "end": 48.116
+ },
+ {
+  "image": "scenes/003.png",
+  "start": 48.116,
+  "end": 73.766
+ },
+ {
+  "image": "scenes/004.png",
+  "start": 73.766,
+  "end": 95.245
+ },
+ {
+  "image": "scenes/005.png",
+  "start": 95.245,
+  "end": 119.216
+ },
+ {
+  "image": "scenes/006.png",
+  "start": 119.216,
+  "end": 146.082
+ },
+ {
+  "image": "scenes/007.png",
+  "start": 146.082,
+  "end": 165.421
+ },
+ {
+  "image": "scenes/008.png",
+  "start": 165.421,
+  "end": 185.78
+ },
+ {
+  "image": "scenes/009.png",
+  "start": 185.78,
+  "end": 204.407
+ },
+ {
+  "image": "scenes/010.png",
+  "start": 204.407,
+  "end": 224.244
+ },
+ {
+  "image": "scenes/011.png",
+  "start": 224.244,
+  "end": 240.444
+ },
+ {
+  "image": "scenes/012.png",
+  "start": 240.444,
+  "end": 261.267
+ },
+ {
+  "image": "scenes/013.png",
+  "start": 261.267,
+  "end": 283.216
+ },
+ {
+  "image": "scenes/014.png",
+  "start": 283.216,
+  "end": 308.691
+ },
+ {
+  "image": "scenes/015.png",
+  "start": 308.691,
+  "end": 330.989
+ },
+ {
+  "image": "scenes/016.png",
+  "start": 330.989,
+  "end": 349.769
+ },
+ {
+  "image": "scenes/017.png",
+  "start": 349.769,
+  "end": 367.213
+ },
+ {
+  "image": "scenes/018.png",
+  "start": 367.213,
+  "end": 383.676
+ },
+ {
+  "image": "scenes/019.png",
+  "start": 383.676,
+  "end": 409.805
+ },
+ {
+  "image": "scenes/020.png",
+  "start": 409.805,
+  "end": 429.244
+ }
+]
