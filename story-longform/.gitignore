@@ -6,3 +6,4 @@ works/**/*.jpg
 works/**/*.scenes.txt
 works/**/*.list.txt
 __pycache__/
+.env
