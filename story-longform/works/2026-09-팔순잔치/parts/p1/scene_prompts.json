@@ -1,0 +1,22 @@
+[
+  {"n": 1, "who": ["서윤"], "prompt": "4 a.m. in an old Korean home kitchen under a cold fluorescent light, {서윤} wrapping fried jeon in foil at the counter, close view showing her hands and the inside of her left wrist with a small crescent burn scar, steam and oil bottles, tired but composed."},
+  {"n": 2, "who": ["박미자", "서윤"], "prompt": "Kitchen doorway at dawn, {박미자} in a purple hanbok standing at the threshold speaking down at {서윤}, who stands by the counter holding a closed food box, looking at the floor. Two people clearly separated left and right."},
+  {"n": 3, "who": ["최민준"], "prompt": "Living room morning light, {최민준} knotting a navy tie while walking past, glancing away, a car key in his other hand, front door open behind him."},
+  {"n": 4, "who": ["서윤"], "prompt": "Inside a city bus by the window, {서윤} seated with a large food box on her lap, a 7-year-old girl in a pink dress with pigtails beside her looking up at her, morning light on the glass."},
+  {"n": 5, "who": ["최상길"], "prompt": "Hotel banquet hall entrance decorated with chrysanthemums and gold balloons, {최상길} in a grey hanbok standing at the doorway receiving a food box, eyes slightly moist, quiet gratitude."},
+  {"n": 6, "who": ["최은경"], "prompt": "Banquet stage, {최은경} in a cream blazer holding a microphone and smiling to a hall of two hundred guests seen from behind, a large banner reading nothing, warm chandelier light."},
+  {"n": 7, "who": [], "prompt": "A three-tier white celebration cake collapsed on the banquet carpet, cream smeared, a small pink dress hem and a child's shoe beside it, guests' legs blurred in the background, silence."},
+  {"n": 8, "who": ["서윤"], "prompt": "{서윤} kneeling on the stage edge hugging a crying 7-year-old girl, wiping cream from the child's dress, her hands trembling, hall lights above."},
+  {"n": 9, "who": ["박미자"], "prompt": "Close view of {박미자} standing in front of the stage in her purple hanbok, chin raised, mouth mid-command, pointing at the floor, chandelier behind her."},
+  {"n": 10, "who": ["서윤"], "prompt": "Wide shot of the banquet hall: {서윤} kneeling alone on the carpet in front of the collapsed cake, back straight, eyes forward, rows of seated guests seen from behind and out of focus."},
+  {"n": 11, "who": ["최상길", "최은경"], "prompt": "Head table, {최상길} half-rising from his chair while {최은경} grips his arm and presses him back down, her smile fixed, his hand trembling on his hanbok knee."},
+  {"n": 12, "who": ["윤재국"], "prompt": "Top-floor corporate office with floor-to-ceiling windows over the city, {윤재국} in a dark suit turning from the window, a secretary in black suit rushing in through the door holding a single sheet of paper, seen from behind."},
+  {"n": 13, "who": ["윤재국"], "prompt": "Close view of {윤재국}'s aged hands holding a DNA match report, the other hand wrapped around the trembling one, a framed photo of a six-year-old girl blurred on the desk behind."},
+  {"n": 14, "who": ["윤재국"], "prompt": "Interior of a black sedan, {윤재국} in the back seat in his black coat, eyes closed, city passing outside the window, the secretary's shoulder visible in the front seat."},
+  {"n": 15, "who": ["최은경"], "prompt": "{최은경} on stage holding the microphone, smiling and gesturing 'get up' with her free hand, looking down toward the floor in front of her."},
+  {"n": 16, "who": ["서윤"], "prompt": "{서윤} kneeling on the carpet, a 7-year-old girl in a pink dress kneeling beside her and holding her hand, both looking forward, soft light, guests' blurred backs in the foreground."},
+  {"n": 17, "who": ["박미자", "최은경"], "prompt": "{박미자} in purple hanbok and {최은경} in cream blazer standing side by side near the head table, arms crossed, sharing the same cold smirk, banquet lights behind them."},
+  {"n": 18, "who": ["윤재국"], "prompt": "Banquet hall double doors swung open, {윤재국} in a long black coat stepping in with four men in dark suits behind him, backlit by corridor light, guests' heads turning."},
+  {"n": 19, "who": ["최은경", "박미자", "최민준"], "prompt": "Near the hall entrance, {최은경} hurrying forward with a delighted smile, {박미자} bowing deeply in her hanbok, {최민준} standing up straightening his tie, all facing the doorway, three distinct people."},
+  {"n": 20, "who": ["윤재국"], "prompt": "{윤재국} standing in the middle of the banquet hall looking down, seen from a low angle over the shoulder of a kneeling woman whose left wrist with a crescent scar is in the foreground, collapsed cake nearby, everything else out of focus."}
+]
