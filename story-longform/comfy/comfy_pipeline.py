@@ -1,4 +1,4 @@
-"""
+r"""
 ComfyUI 자동 생성 + 자동 검수 루프 (집 PC, RTX 3070 Ti 8GB)
 
     # ComfyUI를 먼저 켠다 (run_comfy_8gb.bat) → http://127.0.0.1:8188
@@ -19,9 +19,11 @@ ComfyUI 자동 생성 + 자동 검수 루프 (집 PC, RTX 3070 Ti 8GB)
 두 명 이상 장면: 기준 얼굴들을 가로로 이어 붙인 한 장을 참조로 넣는다 (Kontext는 참조 1장).
 """
 import argparse
+import hashlib
 import io
 import json
 import random
+import re
 import sys
 import time
 import uuid
@@ -35,16 +37,30 @@ HERE = Path(__file__).resolve().parent
 COMFY_URL = "http://127.0.0.1:8188"
 FACE_DIR = None  # 설치 스크립트가 만든 face_models 폴더 (자동 탐색)
 
-PRE = ("Photorealistic still from a Korean TV drama, shot on a cinema camera, natural skin texture with pores, "
-       "soft realistic lighting, true-to-life colors, no beauty filter, no illustration, no anime, no CGI look, "
-       "no text, no watermark.")
-FRAME = "Wide 16:9 cinematic frame with generous headroom; full head and hands inside the frame."
+# 장면 공통 접두어. 기준 얼굴과 같은 질감(부드러운 조명·저대비·깨끗하지만 실제 같은 피부)으로 맞춘다.
+# 부정형("no CGI", "no text")은 FLUX가 오히려 그리므로 쓰지 않는다.
+PRE = ("Photorealistic still frame from a Korean TV drama, a real photograph, soft natural realistic lighting, "
+       "low contrast, neutral color grading, true-to-life colors, clean realistic skin with subtle natural texture.")
+# 기준 얼굴 전용 스타일 (사용자 견본: 한국 드라마 캐스팅 프로필 — 밝은 회색 단색 배경, 부드러운 정면 조명,
+# 저대비, 깨끗하지만 실제 같은 피부, 절제된 주름, 차분한 표정, 머리 주변 여백).
+# FLUX는 부정형("no makeup")을 오히려 그리므로 긍정형으로만 쓴다. 다큐·거친 질감 표현은 주름과 그림자를 과장하므로 뺀다.
+REF_STYLE = ("Professional studio headshot, head and upper shoulders, hands out of frame, camera at eye level, "
+             "natural camera distance with comfortable space around the head, the subject fills about 70 percent of "
+             "the frame. Plain medium-light neutral grey solid seamless background. Soft even frontal studio lighting from a large "
+             "softbox, very soft shadows, low contrast, neutral color grading, soft warm-neutral Korean skin tone. "
+             "Clean realistic skin with subtle natural texture, gentle age-appropriate lines, natural lip color. "
+             "Calm, serious, restrained expression with a relaxed brow. Polished commercial casting portrait, 85mm lens.")
+FRAME = ("Wide 16:9 frame with generous headroom; full head and hands inside the frame. Set in present-day South Korea "
+         "with Korean interiors and Korean people. Candid unposed story moment: people look at each other or at what "
+         "they are doing, never at the camera.")
 
 
 # ---------------- ComfyUI API ----------------
 def comfy_upload(path):
+    # 한글 파일명은 멀티파트 헤더에서 깨질 수 있어 ASCII 이름으로 올린다
+    safe = "ref_" + hashlib.md5(Path(path).name.encode("utf-8")).hexdigest()[:12] + ".png"
     with open(path, "rb") as f:
-        r = requests.post(f"{COMFY_URL}/upload/image", files={"image": (Path(path).name, f, "image/png")},
+        r = requests.post(f"{COMFY_URL}/upload/image", files={"image": (safe, f, "image/png")},
                           data={"overwrite": "true"}, timeout=60)
     r.raise_for_status()
     return r.json()["name"]
@@ -76,6 +92,16 @@ def load_wf(name):
 
 
 # ---------------- 얼굴 검사 (OpenCV YuNet + SFace) ----------------
+def imread_u(path):
+    """cv2.imread는 Windows에서 한글 경로를 못 읽으므로 바이트로 읽어 디코드한다."""
+    import cv2
+    img = cv2.imdecode(np.fromfile(str(path), dtype=np.uint8), cv2.IMREAD_COLOR)
+    if img is None:
+        raise SystemExit(f"이미지를 읽을 수 없음: {path}")
+    return img
+
+
+
 class FaceQC:
     def __init__(self):
         import cv2
@@ -114,7 +140,7 @@ class FaceQC:
     def check(self, img_path, ref_embeds, expected):
         """반환: (통과여부, 사유 목록, 점수 dict)"""
         cv2 = self.cv2
-        img = cv2.imread(str(img_path))
+        img = imread_u(img_path)
         h, w = img.shape[:2]
         fs = self.faces(img)
         reasons, scores = [], {"faces": len(fs), "sims": []}
@@ -149,19 +175,57 @@ def run_refs(a):
     prompts = json.loads(Path(a.prompts).read_text(encoding="utf-8"))
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
+    only = set(a.only.split(",")) if a.only else None
+    cand_dir = out / "_candidates"
+    if a.n > 1:
+        cand_dir.mkdir(exist_ok=True)
     for name, desc in prompts.items():
-        dst = out / f"ref_{name}.png"
-        if dst.exists() and not a.force:
-            print("있음:", dst.name)
+        if only and name not in only:
             continue
-        wf = load_wf("ref_portrait.json")
-        wf["7"]["inputs"]["text"] = (f"{PRE} Character reference portrait, upper body, three-quarter angle facing camera, "
-                                     f"neutral expression, blurred plain indoor background. {desc}")
-        wf["12"]["inputs"]["seed"] = random.randint(1, 2**31)
-        t0 = time.time()
-        dst.write_bytes(comfy_run(wf))
-        print(f"생성: {dst.name} ({time.time()-t0:.0f}s)")
+        # 기준 얼굴에는 손·손목이 나오지 않게 한다: 손목 흉터·손 자세 문구는 장면 프롬프트가 담당
+        # (그대로 두면 흉터를 보여주려고 손을 들어 올리거나 문신처럼 그린다)
+        face_desc = re.sub(r",\s*(hands folded|arms crossed)", "", desc)
+        face_desc = " ".join(s for s in re.split(r"(?<=[.])\s+", face_desc) if not re.search(r"wrist", s, re.I))
+        # 인물 묘사를 맨 앞에 둔다 (뒤에 두면 머리 모양·옷·체형이 잘 반영되지 않음)
+        text = f"Korean drama casting reference photo of a {face_desc} {REF_STYLE}"
+        targets = [out / f"ref_{name}.png"] if a.n == 1 else [cand_dir / f"{name}{a.tag}_{i}.png" for i in range(1, a.n + 1)]
+        for dst in targets:
+            if dst.exists() and not a.force:
+                print("있음:", dst.name)
+                continue
+            wf = load_wf("ref_portrait.json")
+            wf["7"]["inputs"]["text"] = text
+            wf["9"]["inputs"]["guidance"] = a.guidance  # 높을수록 매끈한 AI 피부가 된다
+            if a.lora:  # 리얼리즘 LoRA: GGUF 로더와 샘플러 사이에 끼운다. 사진다움만 보태는 용도로 약하게
+                # (0.9 + 트리거 단어는 주름·그림자·거친 피부를 과장해서 사용자가 반려함)
+                wf["20"] = {"class_type": "LoraLoaderModelOnly",
+                            "inputs": {"model": ["1", 0], "lora_name": a.lora, "strength_model": a.lora_strength}}
+                wf["12"]["inputs"]["model"] = ["20", 0]
+            wf["11"]["inputs"].update(width=1024, height=1024)
+            wf["12"]["inputs"]["seed"] = random.randint(1, 2**31)
+            t0 = time.time()
+            dst.write_bytes(comfy_run(wf))
+            print(f"생성: {dst.name} ({time.time()-t0:.0f}s)", flush=True)
+    if a.n > 1:
+        print("후보 중 하나를 골라 ref_이름.png 로 복사하세요:", cand_dir)
     print("기준 얼굴을 눈으로 확인하고, 마음에 안 드는 인물은 파일을 지우고 다시 실행하세요.")
+
+
+def head_crop(qc, ref_path, tmp):
+    """기준 얼굴에서 머리카락 위부터 목까지만 잘라 tmp에 저장하고 그 경로를 돌려준다."""
+    dst = tmp / f"head2_{Path(ref_path).stem}.png"
+    if dst.exists() and dst.stat().st_mtime >= Path(ref_path).stat().st_mtime:
+        return dst
+    img = imread_u(ref_path)
+    fs = qc.faces(img, min_frac=0.0)
+    if not fs:
+        raise SystemExit(f"기준 얼굴에서 얼굴을 못 찾음: {Path(ref_path).name}")
+    x, y, bw, bh = fs[0][:4]
+    H, W = img.shape[:2]
+    x0, x1 = int(max(0, x - bw * 0.55)), int(min(W, x + bw * 1.55))
+    y0, y1 = int(max(0, y - bh * 0.65)), int(min(H, y + bh * 1.12))  # 턱 바로 아래까지 (옷깃 제외)
+    Image.open(ref_path).convert("RGB").crop((x0, y0, x1, y1)).save(dst)
+    return dst
 
 
 def stitched_ref(ref_paths, tmp):
@@ -190,7 +254,7 @@ def run_scenes(a):
 
     def ref_embed(name):
         if name not in ref_embed_cache:
-            img = qc.cv2.imread(str(refs / f"ref_{name}.png"))
+            img = imread_u(refs / f"ref_{name}.png")
             fs = qc.faces(img, min_frac=0.0)
             if not fs:
                 raise SystemExit(f"기준 얼굴에서 얼굴을 못 찾음: ref_{name}.png")
@@ -209,12 +273,15 @@ def run_scenes(a):
             continue
         who = s.get("who", [])
         prompt = s["prompt"]
+        # 이어 붙인 참조 이미지에서의 위치 (2명: 좌·우, 3명: 좌·중·우)
+        pos = {1: [""], 2: [" (left)", " (right)"], 3: [" (left)", " (center)", " (right)"]}.get(len(who), [""] * len(who))
         for i, w in enumerate(who):
-            prompt = prompt.replace("{" + w + "}", f"the person from the reference image{' (left)' if len(who) > 1 and i == 0 else ' (right)' if len(who) > 1 else ''} ({w}), same face, same hair, same age")
+            prompt = prompt.replace("{" + w + "}", f"the person from the reference image{pos[i]} ({w}), same face, same hair, same age")
         text = f"{PRE} {FRAME} {prompt}"
         wf = load_wf("scene_kontext.json")
         if who:
-            ref_paths = [refs / f"ref_{w}.png" for w in who]
+            # 참조는 머리·목만 잘라서 넣는다: 기준 얼굴 사진의 옷(재킷 등)이 장면 의상으로 새는 것을 막는다
+            ref_paths = [head_crop(qc, refs / f"ref_{w}.png", tmp) for w in who]
             ref_img = ref_paths[0] if len(who) == 1 else stitched_ref(ref_paths, tmp)
             wf["4"]["inputs"]["image"] = comfy_upload(ref_img)
             text = ("Keep the exact face identity from the reference image for each named person; "
@@ -226,6 +293,12 @@ def run_scenes(a):
             wf["9"]["inputs"]["conditioning"] = ["7", 0]
             wf["9"]["inputs"]["guidance"] = 3.0
         wf["7"]["inputs"]["text"] = text
+        if a.guidance:
+            wf["9"]["inputs"]["guidance"] = a.guidance
+        if a.lora:  # 기준 얼굴과 같은 약한 리얼리즘 LoRA
+            wf["20"] = {"class_type": "LoraLoaderModelOnly",
+                        "inputs": {"model": ["1", 0], "lora_name": a.lora, "strength_model": a.lora_strength}}
+            wf["12"]["inputs"]["model"] = ["20", 0]
         ref_embeds = {w: ref_embed(w) for w in who}
         passed = False
         for t in range(1, a.tries + 1):
@@ -252,22 +325,31 @@ def run_scenes(a):
 
 
 def main():
+    global COMFY_URL
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("refs")
     r.add_argument("--prompts", required=True)
     r.add_argument("--out", required=True)
+    r.add_argument("--n", type=int, default=1, help="인물당 후보 수 (2 이상이면 _candidates 폴더에 이름_1.png … 로 저장)")
+    r.add_argument("--only", help="이 인물만 (쉼표 구분, 예: 서윤,윤재국)")
+    r.add_argument("--guidance", type=float, default=2.3)
+    r.add_argument("--lora", default="flux-super-realism.safetensors", help="models/loras 안의 파일명, 빈 문자열이면 LoRA 없이")
+    r.add_argument("--lora-strength", type=float, default=0.35)
+    r.add_argument("--tag", default="", help="후보 파일명 접미사 (설정 비교용)")
     s = sub.add_parser("scenes")
     s.add_argument("--prompts", required=True)
     s.add_argument("--refs", required=True)
     s.add_argument("--out", required=True)
     s.add_argument("--only")
     s.add_argument("--tries", type=int, default=4)
+    s.add_argument("--guidance", type=float, default=0, help="0이면 워크플로우 기본값(참조 있음 2.5 / 없음 3.0)")
+    s.add_argument("--lora", default="flux-super-realism.safetensors", help="빈 문자열이면 LoRA 없이")
+    s.add_argument("--lora-strength", type=float, default=0.35)
     for p in (r, s):
         p.add_argument("--force", action="store_true")
         p.add_argument("--url", default=COMFY_URL)
     a = ap.parse_args()
-    global COMFY_URL
     COMFY_URL = a.url
     try:
         requests.get(f"{COMFY_URL}/system_stats", timeout=5)

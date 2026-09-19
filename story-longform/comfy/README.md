@@ -12,8 +12,9 @@ cd ddong\story-longform\comfy
 Set-ExecutionPolicy -Scope Process Bypass
 .\install_comfyui.ps1
 ```
-D 드라이브가 있으면 `D:\ComfyUI`, 없으면 `C:\ComfyUI`에 설치됩니다.
-끝나면 `D:\ComfyUI\run_comfy_8gb.bat`가 생깁니다.
+이미 ComfyUI 포터블이 있으면(`D:\ComfyUI` 또는 `C:\ComfyUI`) 그 위치를 재사용해 모델·노드만 추가합니다.
+없으면 D 드라이브가 있을 때 `D:\ComfyUI`, 없을 때 `C:\ComfyUI`에 새로 설치됩니다.
+끝나면 설치 위치에 `run_comfy_8gb.bat`가 생깁니다. (이 PC: `C:\ComfyUI\run_comfy_8gb.bat`, Wan 2.2와 공용)
 
 ## 2. ComfyUI 켜기
 `run_comfy_8gb.bat` 실행 → 검은 창에 `To see the GUI go to: http://127.0.0.1:8188` 가 뜨면 준비 완료.
@@ -26,6 +27,10 @@ cd ddong\story-longform
 python comfy\comfy_pipeline.py refs --prompts "works\2026-09-팔순잔치\characters\prompts.json" --out "works\2026-09-팔순잔치\characters"
 ```
 `characters\ref_서윤.png` 등 6장이 생깁니다. 열어 보고 마음에 안 드는 인물은 그 파일만 지우고 같은 명령을 다시 실행하면 그 인물만 다시 만듭니다.
+- 후보를 여러 장 뽑아 고르려면 `--n 3` (→ `characters\_candidates\이름_1.png …`), 특정 인물만은 `--only 서윤,윤재국`.
+- 스타일은 사용자 승인 견본(드라마 캐스팅 프로필: 밝은 회색 배경, 부드러운 정면 조명, 저대비)에 맞춰져 있습니다.
+  기본값 `--guidance 2.3 --lora flux-super-realism.safetensors --lora-strength 0.35`. LoRA를 0.9로 올리면 주름·그림자가 과해져 반려된 적이 있습니다.
+- 손목 흉터·손 자세 문구는 기준 얼굴에서 자동으로 빠집니다(장면 프롬프트가 담당).
 6장이 확정되면 이 6장을 Claude Code 대화창에 올려 승인을 받습니다 (규격 5번: 작품 시작 시 기준 얼굴 확정).
 
 ## 4. 장면 생성 + 자동 검수
